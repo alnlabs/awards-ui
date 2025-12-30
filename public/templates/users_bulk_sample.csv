@@ -1,0 +1,3 @@
+name,email,employee_code,role,password,q1,q1_answer,q2,q2_answer,q3,q3_answer
+Employee One,user1@example.com,EMP1001,EMPLOYEE,Password@123,What was the nickname your friends gave you in school?,Nick1,Which place do you want to visit again the most?,Place1,What was your first job role?,Role1
+Employee Two,user2@example.com,EMP1002,EMPLOYEE,Password@123,What food can you eat every day without getting bored?,Food1,Which teacher had the biggest impact on you?,Teacher1,What was your childhood dream job?,DreamJob1

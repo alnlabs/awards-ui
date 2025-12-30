@@ -1,0 +1,372 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { BiPlus, BiCopy } from "react-icons/bi";
+import toast from "react-hot-toast";
+
+import PageHeader from "../../components/common/PageHeader";
+import { Card, CardBody } from "../../components/common/Card";
+import AppButton from "../../components/common/AppButton";
+import Loading from "../../components/common/Loading";
+import api from "../../services/api";
+
+/* =====================
+   Helpers
+===================== */
+
+const generateFieldKey = (label) =>
+  label
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, "_");
+
+/* =====================
+   Defaults
+===================== */
+
+const EMPTY_CRITERIA = {
+  name: "",
+  description: "",
+  fields: [],
+};
+
+const EMPTY_FIELD = {
+  label: "",
+  field_key: "",
+  field_type: "TEXT",
+  is_required: false,
+  order_index: 0,
+  options: [], // UI uses array
+  ui_schema: null,
+  validation: null,
+  _keyEdited: false, // UI-only
+};
+
+/* =====================
+   Component
+===================== */
+
+const UpsertCriteria = () => {
+  const { id } = useParams(); // clone source
+  const isClone = Boolean(id);
+
+  const navigate = useNavigate();
+
+  const [values, setValues] = useState(EMPTY_CRITERIA);
+  const [loading, setLoading] = useState(isClone);
+  const [saving, setSaving] = useState(false);
+
+  /* =====================
+     Load Criteria (CLONE)
+  ===================== */
+  useEffect(() => {
+    if (!isClone) return;
+
+    const loadCriteria = async () => {
+      try {
+        const res = await api.get(`/forms/${id}`);
+
+        setValues({
+          name: `${res.data.name} (Copy)`,
+          description: res.data.description || "",
+          fields: (res.data.fields || []).map((f) => ({
+            ...f,
+            // backend → object, UI → array
+            options: f.options ? Object.values(f.options) : [],
+            _keyEdited: true,
+          })),
+        });
+      } catch {
+        toast.error("Failed to load criteria");
+        navigate("/criteria");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCriteria();
+  }, [id, isClone, navigate]);
+
+  /* =====================
+     Handlers
+  ===================== */
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFieldChange = (index, key, value) => {
+    const updated = [...values.fields];
+    const field = { ...updated[index] };
+
+    if (key === "label") {
+      field.label = value;
+      if (!field._keyEdited) {
+        field.field_key = generateFieldKey(value);
+      }
+    } else if (key === "field_key") {
+      field.field_key = value;
+      field._keyEdited = true;
+    } else if (key === "field_type") {
+      field.field_type = value;
+
+      // reset options if not SELECT
+      if (value !== "SELECT") {
+        field.options = [];
+      }
+    } else {
+      field[key] = value;
+    }
+
+    updated[index] = field;
+    setValues((prev) => ({ ...prev, fields: updated }));
+  };
+
+  const handleOptionsChange = (index, value) => {
+    const updated = [...values.fields];
+    updated[index] = {
+      ...updated[index],
+      options: value
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean),
+    };
+
+    setValues((prev) => ({ ...prev, fields: updated }));
+  };
+
+  const addField = () => {
+    setValues((prev) => ({
+      ...prev,
+      fields: [
+        ...prev.fields,
+        { ...EMPTY_FIELD, order_index: prev.fields.length },
+      ],
+    }));
+  };
+
+  const removeField = (index) => {
+    setValues((prev) => ({
+      ...prev,
+      fields: prev.fields.filter((_, i) => i !== index),
+    }));
+  };
+
+  /* =====================
+     Submit
+  ===================== */
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!values.name.trim()) {
+      toast.error("Criteria name is required");
+      return;
+    }
+
+    if (values.fields.length === 0) {
+      toast.error("Add at least one criteria field");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // 🔁 UI → API conversion
+      const payload = {
+        ...values,
+        fields: values.fields.map(({ _keyEdited, ...field }) => {
+          if (field.field_type === "SELECT") {
+            const optionsDict = {};
+            field.options.forEach((opt) => {
+              optionsDict[opt] = opt;
+            });
+
+            return {
+              ...field,
+              options: optionsDict, // ✅ backend expects dict
+            };
+          }
+
+          return {
+            ...field,
+            options: null,
+          };
+        }),
+      };
+
+      await api.post("/forms", payload);
+      toast.success("Criteria created successfully");
+      navigate("/criteria");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <Loading />;
+
+  /* =====================
+     UI
+  ===================== */
+
+  return (
+    <>
+      <PageHeader
+        icon={isClone ? BiCopy : BiPlus}
+        title={isClone ? "Clone Criteria" : "Create Criteria"}
+        subtitle="Define global evaluation criteria for nominations"
+      />
+
+      <Card>
+        <CardBody>
+          <form onSubmit={handleSubmit} className="row g-3">
+            {/* Name */}
+            <div className="col-md-6">
+              <label className="form-label">Criteria Name</label>
+              <input
+                name="name"
+                className="form-control"
+                value={values.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className="col-12">
+              <label className="form-label">Description</label>
+              <textarea
+                name="description"
+                className="form-control"
+                rows={2}
+                value={values.description}
+                onChange={handleChange}
+              />
+            </div>
+
+            <hr />
+
+            <div className="col-12">
+              <h5>Criteria Fields</h5>
+            </div>
+
+            {values.fields.map((field, idx) => (
+              <div key={idx} className="border rounded p-3 mb-2">
+                <div className="row g-2">
+                  {/* Label */}
+                  <div className="col-md-4">
+                    <input
+                      className="form-control"
+                      placeholder="Label"
+                      value={field.label}
+                      onChange={(e) =>
+                        handleFieldChange(idx, "label", e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+
+                  {/* Field Key */}
+                  <div className="col-md-3">
+                    <input
+                      className="form-control"
+                      placeholder="field_key"
+                      value={field.field_key}
+                      onChange={(e) =>
+                        handleFieldChange(idx, "field_key", e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+
+                  {/* Type */}
+                  <div className="col-md-3">
+                    <select
+                      className="form-select"
+                      value={field.field_type}
+                      onChange={(e) =>
+                        handleFieldChange(idx, "field_type", e.target.value)
+                      }
+                    >
+                      <option value="TEXT">Text</option>
+                      <option value="NUMBER">Number</option>
+                      <option value="TEXTAREA">Textarea</option>
+                      <option value="SELECT">Select</option>
+                      <option value="RATING">Rating</option>
+                    </select>
+                  </div>
+
+                  {/* Required */}
+                  <div className="col-md-2 d-flex align-items-center">
+                    <input
+                      type="checkbox"
+                      className="form-check-input me-2"
+                      checked={field.is_required}
+                      onChange={(e) =>
+                        handleFieldChange(idx, "is_required", e.target.checked)
+                      }
+                    />
+                    Required
+                  </div>
+
+                  {/* SELECT OPTIONS */}
+                  {field.field_type === "SELECT" && (
+                    <div className="col-12">
+                      <input
+                        className="form-control"
+                        placeholder="Options (comma separated)"
+                        value={field.options.join(", ")}
+                        onChange={(e) =>
+                          handleOptionsChange(idx, e.target.value)
+                        }
+                        required
+                      />
+                      <small className="text-muted">
+                        Example: Low, Medium, High, Exceptional
+                      </small>
+                    </div>
+                  )}
+
+                  {/* Remove */}
+                  <div className="col-12 text-end">
+                    <AppButton
+                      variant="outline-danger"
+                      size="sm"
+                      type="button"
+                      onClick={() => removeField(idx)}
+                    >
+                      Remove
+                    </AppButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div className="col-12">
+              <AppButton type="button" onClick={addField}>
+                + Add Field
+              </AppButton>
+            </div>
+
+            <div className="col-12 d-flex gap-2 mt-3">
+              <AppButton type="submit" loading={saving}>
+                Create Criteria
+              </AppButton>
+
+              <AppButton
+                type="button"
+                variant="secondary"
+                onClick={() => navigate("/criteria")}
+              >
+                Cancel
+              </AppButton>
+            </div>
+          </form>
+        </CardBody>
+      </Card>
+    </>
+  );
+};
+
+export default UpsertCriteria;

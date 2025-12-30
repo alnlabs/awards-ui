@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Employee One",
+    "email": "user1@example.com",
+    "employee_code": "EMP1001",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Nick1"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Place1"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Role1"
+      }
+    ]
+  },
+  {
+    "name": "Employee Two",
+    "email": "user2@example.com",
+    "employee_code": "EMP1002",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Food1"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Teacher1"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "DreamJob1"
+      }
+    ]
+  }
+]
