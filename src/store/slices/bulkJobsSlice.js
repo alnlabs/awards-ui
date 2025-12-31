@@ -8,10 +8,7 @@ export const fetchBulkJobs = createAsyncThunk(
   "bulkJobs/fetchBulkJobs",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/bulk-jobs");
-
-      // api interceptor unwraps → res.data = actual array
-      return res.data; // 🔑 array of jobs
+      return await api.get("/bulk-jobs"); // ✅ ARRAY
     } catch (error) {
       return rejectWithValue(error?.error || "Failed to fetch bulk jobs");
     }
@@ -25,8 +22,7 @@ export const fetchBulkJobById = createAsyncThunk(
   "bulkJobs/fetchBulkJobById",
   async (jobId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/bulk-jobs/${jobId}`);
-      return res.data;
+      return await api.get(`/bulk-jobs/${jobId}`); // ✅ OBJECT
     } catch (error) {
       return rejectWithValue(error?.error || "Failed to fetch bulk job");
     }
@@ -41,7 +37,7 @@ export const cancelBulkJob = createAsyncThunk(
   async (jobId, { rejectWithValue }) => {
     try {
       await api.post(`/bulk-jobs/${jobId}/cancel`);
-      return jobId;
+      return jobId; // business-only return
     } catch (error) {
       return rejectWithValue(error?.error || "Failed to cancel job");
     }
@@ -59,6 +55,7 @@ const bulkJobsSlice = createSlice({
     loading: false,
     error: null,
   },
+
   reducers: {
     clearBulkJobsError: (state) => {
       state.error = null;
@@ -67,8 +64,10 @@ const bulkJobsSlice = createSlice({
       state.currentJob = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
+
       /* ================= FETCH JOBS ================= */
       .addCase(fetchBulkJobs.pending, (state) => {
         state.loading = true;
@@ -76,7 +75,7 @@ const bulkJobsSlice = createSlice({
       })
       .addCase(fetchBulkJobs.fulfilled, (state, action) => {
         state.loading = false;
-        state.jobs = action.payload; // ✅ ARRAY
+        state.jobs = action.payload || []; // ✅ SAFE
       })
       .addCase(fetchBulkJobs.rejected, (state, action) => {
         state.loading = false;

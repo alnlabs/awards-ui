@@ -1,95 +1,63 @@
-import { useEffect, useState } from "react";
-import Loading from "../../components/common/Loading";
-import api from "../../services/api";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
+import { BiEdit } from "react-icons/bi";
 
-const RenderCriteria = ({ onChange }) => {
-  const [schema, setSchema] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [values, setValues] = useState({});
+import Loading from "../../components/common/Loading";
+import PageHeader from "../../components/common/PageHeader";
+import AppButton from "../../components/common/AppButton";
+import { fetchCriteriaById } from "../../store/slices/criteriaSlice";
+
+const RenderCriteria = () => {
+  const { criteriaId } = useParams();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const { current, loading } = useSelector((state) => state.criteria);
 
   useEffect(() => {
-    const loadCriteria = async () => {
-      try {
-        const res = await api.get("/forms/active/render");
-        setSchema(res.data);
-      } finally {
-        setLoading(false);
-      }
-    };
+    dispatch(fetchCriteriaById(criteriaId));
+  }, [dispatch, criteriaId]);
 
-    loadCriteria();
-  }, []);
-
-  const handleChange = (key, value) => {
-    const updated = { ...values, [key]: value };
-    setValues(updated);
-    onChange?.(updated); // pass answers up to nomination form
-  };
-
-  if (loading) return <Loading />;
-  if (!schema) return null;
+  if (loading && !current) return <Loading />;
+  if (!current) return null;
 
   return (
     <>
-      {schema.fields.map((f) => {
-        const options = f.options?.choices || [];
+      <PageHeader
+        title={current.name}
+        subtitle={current.description || "Criteria details"}
+        actions={
+          <AppButton
+            icon={BiEdit}
+            variant="outline-primary"
+            onClick={() => navigate(`/criteria/${criteriaId}/edit`)}
+          >
+            Edit Criteria
+          </AppButton>
+        }
+      />
 
-        return (
-          <div key={f.field_key} className="mb-3">
-            <label className="form-label">
-              {f.label}
-              {f.is_required && <span className="text-danger ms-1">*</span>}
-            </label>
+      {current.fields.map((f) => (
+        <div key={f.field_key} className="border rounded p-3 mb-3 bg-light">
+          <div className="fw-semibold">{f.label}</div>
 
-            {/* TEXT */}
-            {f.field_type === "TEXT" && (
-              <input
-                className="form-control"
-                required={f.is_required}
-                onChange={(e) => handleChange(f.field_key, e.target.value)}
-              />
-            )}
-
-            {/* TEXTAREA */}
-            {f.field_type === "TEXTAREA" && (
-              <textarea
-                className="form-control"
-                rows={3}
-                required={f.is_required}
-                onChange={(e) => handleChange(f.field_key, e.target.value)}
-              />
-            )}
-
-            {/* NUMBER */}
-            {f.field_type === "NUMBER" && (
-              <input
-                type="number"
-                className="form-control"
-                required={f.is_required}
-                onChange={(e) =>
-                  handleChange(f.field_key, Number(e.target.value))
-                }
-              />
-            )}
-
-            {/* SELECT */}
-            {f.field_type === "SELECT" && (
-              <select
-                className="form-select"
-                required={f.is_required}
-                onChange={(e) => handleChange(f.field_key, e.target.value)}
-              >
-                <option value="">Select</option>
-                {options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+          <div className="text-muted small mt-1">
+            Type: <strong>{f.field_type}</strong>
+            {f.is_required && (
+              <span className="text-danger ms-2">Required</span>
             )}
           </div>
-        );
-      })}
+
+          {f.field_type === "SELECT" && f.options && (
+            <ul className="mt-2 small">
+              {Object.values(f.options).map((opt) => (
+                <li key={opt}>{opt}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
     </>
   );
 };

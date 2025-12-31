@@ -2,13 +2,9 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "react-bootstrap";
-import { BiArrowBack, BiTrophy, BiUser, BiCalendar } from "react-icons/bi";
+import { BiArrowBack, BiTrophy, BiUser } from "react-icons/bi";
 
-import {
-  fetchAwardById,
-  clearCurrentAward,
-} from "../../store/slices/awardsSlice";
-import { USER_ROLES, STATUS_COLORS } from "../../utils/constants";
+import api from "../../services/api";
 
 import PageHeader from "../../components/common/PageHeader";
 import AppButton from "../../components/common/AppButton";
@@ -25,32 +21,39 @@ import {
 ===================== */
 
 const ViewAward = () => {
-  const { id } = useParams();
+  const { id: nominationId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
-  const { currentAward, loading } = useSelector((state) => state.awards);
-  const { user } = useSelector((state) => state.auth);
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
 
   useEffect(() => {
-    dispatch(fetchAwardById(id));
+    let mounted = true;
+
+    api
+      .get(`/nominations/${nominationId}/panel-summary`)
+      .then((res) => {
+        if (mounted) {
+          setData(res);
+        }
+      })
+      .finally(() => mounted && setLoading(false));
 
     return () => {
-      dispatch(clearCurrentAward());
+      mounted = false;
     };
-  }, [dispatch, id]);
+  }, [nominationId]);
 
-  if (loading || !currentAward) return <Loading />;
+  if (loading || !data) return <Loading />;
 
-  const { title, cycle, nominee, nomination, final_score, created_at } =
-    currentAward;
+  const { nominee_id, final_score, panels } = data;
 
   return (
     <>
       <PageHeader
         icon={BiTrophy}
-        title="Award Details"
-        subtitle={title}
+        title="Award Result"
+        subtitle="Final evaluation summary"
         actions={
           <AppButton
             variant="secondary"
@@ -62,71 +65,64 @@ const ViewAward = () => {
         }
       />
 
-      {/* ================= BASIC INFO ================= */}
+      {/* ================= WINNER ================= */}
       <Card className="mb-3">
         <CardHeader>
-          <CardTitle>Award Summary</CardTitle>
+          <CardTitle>Winner</CardTitle>
         </CardHeader>
 
         <CardBody className="row g-3">
           <div className="col-md-6">
-            <strong>Award Title</strong>
-            <div className="text-muted">{title}</div>
-          </div>
-
-          <div className="col-md-6">
-            <strong>Cycle</strong>
-            <div className="text-muted">{cycle?.name || "N/A"}</div>
-          </div>
-
-          <div className="col-md-6">
-            <strong>Winner</strong>
+            <strong>Employee</strong>
             <div className="d-flex align-items-center text-muted">
               <BiUser className="me-2" />
-              {nominee?.name || "N/A"}
+              {nominee_id}
             </div>
           </div>
 
           <div className="col-md-6">
             <strong>Final Score</strong>
             <div>
-              <Badge bg="success">{final_score} / 5</Badge>
-            </div>
-          </div>
-
-          <div className="col-md-6">
-            <strong>Awarded On</strong>
-            <div className="text-muted d-flex align-items-center">
-              <BiCalendar className="me-2" />
-              {new Date(created_at).toLocaleDateString()}
+              <Badge bg="success">{final_score}</Badge>
             </div>
           </div>
         </CardBody>
       </Card>
 
-      {/* ================= NOMINATION SNAPSHOT ================= */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Winning Nomination</CardTitle>
-        </CardHeader>
+      {/* ================= PANEL BREAKDOWN ================= */}
+      {panels.map((panel) => (
+        <Card key={panel.panel_id} className="mb-3">
+          <CardHeader>
+            <CardTitle>{panel.panel_name}</CardTitle>
+          </CardHeader>
 
-        <CardBody>
-          {nomination?.answers?.length === 0 ? (
-            <p className="text-muted">No nomination details available</p>
-          ) : (
-            nomination.answers.map((a) => (
-              <div key={a.id} className="mb-3">
-                <label className="fw-semibold">{a.field_key}</label>
-                <div className="border rounded p-2 bg-light">
-                  {typeof a.value === "object"
-                    ? JSON.stringify(a.value)
-                    : String(a.value)}
+          <CardBody>
+            {panel.tasks.map((task) => (
+              <div key={task.task_id} className="mb-3">
+                <div className="fw-semibold">
+                  {task.title}
+                  {!task.is_required && (
+                    <small className="text-muted ms-2">(Optional)</small>
+                  )}
+                </div>
+
+                <div className="text-muted">
+                  Avg Score:{" "}
+                  <strong>
+                    {task.average_score !== null ? task.average_score : "—"}
+                  </strong>
                 </div>
               </div>
-            ))
-          )}
-        </CardBody>
-      </Card>
+            ))}
+
+            <hr />
+
+            <div className="fw-bold">
+              Panel Total: {panel.panel_total_score}
+            </div>
+          </CardBody>
+        </Card>
+      ))}
     </>
   );
 };

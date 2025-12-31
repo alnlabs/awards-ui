@@ -1,13 +1,26 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Container, Row, Col, Card, Badge } from 'react-bootstrap';
-import styled from 'styled-components';
-import { BiTrophy, BiUser, BiListUl, BiBook, BiCheckCircle, BiClock } from 'react-icons/bi';
-import { fetchCycles } from '../store/slices/cyclesSlice';
-import { fetchNominations } from '../store/slices/nominationsSlice';
-import { fetchCurrentAwards } from '../store/slices/awardsSlice';
-import { USER_ROLES } from '../utils/constants';
-import Loading from '../components/common/Loading';
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { Container, Row, Col, Card } from "react-bootstrap";
+import styled from "styled-components";
+import {
+  BiTrophy,
+  BiUser,
+  BiListUl,
+  BiBook,
+  BiCheckCircle,
+  BiTimer,
+} from "react-icons/bi";
+
+import { fetchCycles } from "../store/slices/cyclesSlice";
+import { fetchNominations } from "../store/slices/nominationsSlice";
+import { fetchPanels } from "../store/slices/panelSlice";
+
+import { USER_ROLES } from "../utils/constants";
+import Loading from "../components/common/Loading";
+
+/* =====================
+   Styled Components
+===================== */
 
 const StatCard = styled(Card)`
   border: none;
@@ -15,8 +28,8 @@ const StatCard = styled(Card)`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
   height: 100%;
-  background: ${props => props.bg || 'white'};
-  color: ${props => props.textColor || '#212529'};
+  background: ${(props) => props.bg || "white"};
+  color: ${(props) => props.textColor || "#212529"};
 
   &:hover {
     transform: translateY(-4px);
@@ -43,8 +56,7 @@ const StatIcon = styled.div`
 const StatValue = styled.h2`
   font-size: 2.5rem;
   font-weight: 700;
-  margin: 0;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem;
 `;
 
 const StatLabel = styled.p`
@@ -67,43 +79,86 @@ const WelcomeCard = styled(Card)`
   }
 `;
 
+/* =====================
+   Dashboard (COMMON)
+===================== */
+
 const Dashboard = () => {
   const dispatch = useDispatch();
+
   const { user } = useSelector((state) => state.auth);
-  const { cycles, loading: cyclesLoading } = useSelector((state) => state.cycles);
-  const { nominations, loading: nominationsLoading } = useSelector((state) => state.nominations);
-  const { current: awards, loading: awardsLoading } = useSelector((state) => state.awards);
+  const { cycles, loading: cyclesLoading } = useSelector(
+    (state) => state.cycles
+  );
+  const { nominations, loading: nominationsLoading } = useSelector(
+    (state) => state.nominations
+  );
+  const { panels } = useSelector((state) => state.panels);
+
+  /* =====================
+     Fetch Core Data
+  ===================== */
 
   useEffect(() => {
     dispatch(fetchCycles());
     dispatch(fetchNominations({}));
-    dispatch(fetchCurrentAwards());
-  }, [dispatch]);
 
-  const loading = cyclesLoading || nominationsLoading || awardsLoading;
+    if (user?.role === USER_ROLES.HR) {
+      dispatch(fetchPanels());
+    }
+  }, [dispatch, user?.role]);
 
-  const openCycles = cycles.filter(c => c.status === 'OPEN').length;
-  const myNominations = nominations.filter(n => n.nominated_by_id === user?.id).length;
-  const pendingNominations = nominations.filter(n => n.status === 'PANEL_REVIEW' && user?.role === 'PANEL').length;
+  const loading = cyclesLoading || nominationsLoading;
+  if (loading) return <Loading />;
 
-  if (loading) {
-    return <Loading />;
-  }
+  /* =====================
+     Derived Metrics
+  ===================== */
+
+  const openCycles = cycles.filter((c) => c.status === "OPEN").length;
+
+  const myNominations = nominations.filter(
+    (n) => n.nominated_by_id === user?.id
+  ).length;
+
+  const finalizedNominations = nominations.filter(
+    (n) => n.status === "FINALIZED"
+  ).length;
+
+  const panelReviewItems =
+    user?.role === USER_ROLES.PANEL
+      ? nominations.filter((n) => n.status === "PANEL_REVIEW").length
+      : 0;
+
+  /* =====================
+     Render
+  ===================== */
 
   return (
     <Container fluid>
+      {/* =====================
+          Welcome
+      ===================== */}
       <WelcomeCard>
         <Card.Body>
           <h1>Welcome back, {user?.name}!</h1>
-          <p className="mb-0">Here's what's happening with your awards today.</p>
+          <p className="mb-0">
+            Here's what's happening with the Employee Awards program.
+          </p>
         </Card.Body>
       </WelcomeCard>
 
       <Row className="g-4">
+        {/* =====================
+            HR DASHBOARD
+        ===================== */}
         {user?.role === USER_ROLES.HR && (
           <>
             <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
                     <BiBook />
@@ -113,35 +168,47 @@ const Dashboard = () => {
                 </Card.Body>
               </StatCard>
             </Col>
+
             <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
-                    <BiClock />
+                    <BiTimer />
                   </StatIcon>
                   <StatValue>{openCycles}</StatValue>
                   <StatLabel>Open Cycles</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
+
             <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
-                    <BiListUl />
+                    <BiUser />
                   </StatIcon>
-                  <StatValue>{nominations.length}</StatValue>
-                  <StatLabel>Total Nominations</StatLabel>
+                  <StatValue>{panels.length}</StatValue>
+                  <StatLabel>Panels</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
+
             <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
                     <BiTrophy />
                   </StatIcon>
-                  <StatValue>{awards.length}</StatValue>
+                  <StatValue>{finalizedNominations}</StatValue>
                   <StatLabel>Finalized Awards</StatLabel>
                 </Card.Body>
               </StatCard>
@@ -149,10 +216,16 @@ const Dashboard = () => {
           </>
         )}
 
+        {/* =====================
+            MANAGER DASHBOARD
+        ===================== */}
         {user?.role === USER_ROLES.MANAGER && (
           <>
             <Col xs={12} sm={6} md={4}>
-              <StatCard bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
                     <BiListUl />
@@ -162,8 +235,12 @@ const Dashboard = () => {
                 </Card.Body>
               </StatCard>
             </Col>
+
             <Col xs={12} sm={6} md={4}>
-              <StatCard bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
                     <BiBook />
@@ -173,56 +250,76 @@ const Dashboard = () => {
                 </Card.Body>
               </StatCard>
             </Col>
+
             <Col xs={12} sm={6} md={4}>
-              <StatCard bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
                     <BiTrophy />
                   </StatIcon>
-                  <StatValue>{awards.length}</StatValue>
-                  <StatLabel>Current Awards</StatLabel>
+                  <StatValue>{finalizedNominations}</StatValue>
+                  <StatLabel>Finalized Awards</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
           </>
         )}
 
+        {/* =====================
+            PANEL DASHBOARD
+        ===================== */}
         {user?.role === USER_ROLES.PANEL && (
           <>
             <Col xs={12} sm={6} md={4}>
-              <StatCard bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
-                    <BiClock />
+                    <BiTimer />
                   </StatIcon>
-                  <StatValue>{pendingNominations}</StatValue>
-                  <StatLabel>Pending Reviews</StatLabel>
+                  <StatValue>{panelReviewItems}</StatValue>
+                  <StatLabel>Assignments Pending</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
+
             <Col xs={12} sm={6} md={4}>
-              <StatCard bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" textColor="white">
+              <StatCard
+                bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+                textColor="white"
+              >
                 <Card.Body>
                   <StatIcon>
                     <BiCheckCircle />
                   </StatIcon>
                   <StatValue>{nominations.length}</StatValue>
-                  <StatLabel>Total Nominations</StatLabel>
+                  <StatLabel>Total Assigned</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
           </>
         )}
 
+        {/* =====================
+            EMPLOYEE DASHBOARD
+        ===================== */}
         {user?.role === USER_ROLES.EMPLOYEE && (
           <Col xs={12} sm={6} md={4}>
-            <StatCard bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" textColor="white">
+            <StatCard
+              bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+              textColor="white"
+            >
               <Card.Body>
                 <StatIcon>
                   <BiTrophy />
                 </StatIcon>
-                <StatValue>{awards.length}</StatValue>
-                <StatLabel>Current Awards</StatLabel>
+                <StatValue>{finalizedNominations}</StatValue>
+                <StatLabel>Awards Received</StatLabel>
               </Card.Body>
             </StatCard>
           </Col>
@@ -233,4 +330,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

@@ -1,64 +1,81 @@
-import api from './api';
+import api from "./api";
 
 export const authService = {
-  // Register
-  register: async (data) => {
-    const response = await api.post('/auth/register', data);
-    return response.data;
+  /* =====================
+     Register
+  ===================== */
+  register: async (payload) => {
+    return api.post("/auth/register", payload);
   },
 
-  // Login
+  /* =====================
+     Login
+  ===================== */
   login: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    if (response.status === 'success' && response.data.access_token) {
-      localStorage.setItem('token', response.data.access_token);
+    const data = await api.post("/auth/login", { email, password });
+
+    // data = { access_token, user }
+    if (data?.access_token) {
+      localStorage.setItem("token", data.access_token);
     }
-    return response;
+
+    if (data?.user) {
+      localStorage.setItem("user", JSON.stringify(data.user));
+    }
+
+    return data;
   },
 
-  // Get current user
+  /* =====================
+     Get current user
+  ===================== */
   getMe: async () => {
-    const response = await api.get('/auth/me');
-    if (response.status === 'success' && response.data) {
-      localStorage.setItem('user', JSON.stringify(response.data));
+    const data = await api.get("/auth/me");
+
+    // data = user object
+    if (data) {
+      localStorage.setItem("user", JSON.stringify(data));
     }
-    return response;
+
+    return data;
   },
 
-  // Forgot password
+  /* =====================
+     Forgot password
+  ===================== */
   forgotPassword: async (email, securityQuestions) => {
-    const response = await api.post('/auth/forgot-password', {
+    return api.post("/auth/forgot-password", {
       email,
       security_questions: securityQuestions,
     });
-    return response;
   },
 
-  // Reset password
+  /* =====================
+     Reset password
+  ===================== */
   resetPassword: async (email, newPassword, token) => {
-    const response = await api.post('/auth/reset-password', {
+    return api.post("/auth/reset-password", {
       email,
       new_password: newPassword,
       token,
     });
-    return response;
   },
 
-  // Logout
+  /* =====================
+     Logout
+  ===================== */
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   },
 
-  // Get stored token
-  getToken: () => {
-    return localStorage.getItem('token');
-  },
+  /* =====================
+     Local helpers
+  ===================== */
+  getToken: () => localStorage.getItem("token"),
 
-  // Get stored user
   getUser: () => {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
   },
 };
-

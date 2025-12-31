@@ -2,30 +2,40 @@ import api from "./api";
 
 /**
  * List all criteria
- * (Backend allows only ONE active criteria)
+ * Returns: Criteria[]
  */
-export const listCriteria = () => {
+export const listCriteria = async () => {
   return api.get("/forms");
 };
 
 /**
- * Get criteria by ID (used for clone/view)
+ * Get criteria by ID
+ * Returns: Criteria
  */
-export const getCriteria = (id) => {
+export const getCriteria = async (id) => {
   return api.get(`/forms/${id}`);
 };
 
 /**
- * Create criteria (create-only)
+ * Create criteria
+ * Returns: { id }
  */
-export const createCriteria = (data) => {
+export const createCriteria = async (data) => {
   return api.post("/forms", data);
 };
 
 /**
- * Render active criteria
- * (used during nomination submission)
+ * Update criteria (EDIT – same record)
+ * Returns: { id }
  */
-export const renderCriteria = () => {
-  return api.get("/forms/active/render");
+export const updateCriteria = async (id, data) => {
+  return api.put(`/forms/${id}`, data);
+};
+
+/**
+ * Render active criteria
+ * Returns: { form_id, fields }
+ */
+export const renderCriteria = async () => {
+  return api.get("/forms/active");
 };

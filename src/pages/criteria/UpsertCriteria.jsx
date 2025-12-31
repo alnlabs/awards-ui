@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { BiPlus, BiCopy } from "react-icons/bi";
+import { BiPlus, BiEdit } from "react-icons/bi";
+import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 import PageHeader from "../../components/common/PageHeader";
 import { Card, CardBody } from "../../components/common/Card";
 import AppButton from "../../components/common/AppButton";
 import Loading from "../../components/common/Loading";
-import api from "../../services/api";
+
+import {
+  fetchCriteriaById,
+  createCriteriaAction,
+  updateCriteriaAction,
+  clearCurrentCriteria,
+} from "../../store/slices/criteriaSlice";
 
 /* =====================
    Helpers
 ===================== */
-
 const generateFieldKey = (label) =>
   label
     .toLowerCase()
@@ -23,7 +29,6 @@ const generateFieldKey = (label) =>
 /* =====================
    Defaults
 ===================== */
-
 const EMPTY_CRITERIA = {
   name: "",
   description: "",
@@ -36,61 +41,60 @@ const EMPTY_FIELD = {
   field_type: "TEXT",
   is_required: false,
   order_index: 0,
-  options: [], // UI uses array
+  options: [],
   ui_schema: null,
   validation: null,
-  _keyEdited: false, // UI-only
+  _keyEdited: false, // UI only
 };
 
 /* =====================
    Component
 ===================== */
-
 const UpsertCriteria = () => {
-  const { id } = useParams(); // clone source
-  const isClone = Boolean(id);
-
+  const { criteriaId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { current, loading } = useSelector((state) => state.criteria);
+
+  const isEdit = Boolean(criteriaId);
 
   const [values, setValues] = useState(EMPTY_CRITERIA);
-  const [loading, setLoading] = useState(isClone);
   const [saving, setSaving] = useState(false);
 
   /* =====================
-     Load Criteria (CLONE)
+     Load Criteria (EDIT)
   ===================== */
   useEffect(() => {
-    if (!isClone) return;
+    if (!isEdit) return;
 
-    const loadCriteria = async () => {
-      try {
-        const res = await api.get(`/forms/${id}`);
+    dispatch(fetchCriteriaById(criteriaId));
 
-        setValues({
-          name: `${res.data.name} (Copy)`,
-          description: res.data.description || "",
-          fields: (res.data.fields || []).map((f) => ({
-            ...f,
-            // backend → object, UI → array
-            options: f.options ? Object.values(f.options) : [],
-            _keyEdited: true,
-          })),
-        });
-      } catch {
-        toast.error("Failed to load criteria");
-        navigate("/criteria");
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      dispatch(clearCurrentCriteria());
     };
+  }, [dispatch, criteriaId, isEdit]);
 
-    loadCriteria();
-  }, [id, isClone, navigate]);
+  /* =====================
+     Populate Form
+  ===================== */
+  useEffect(() => {
+    if (!current) return;
+
+    setValues({
+      name: current.name,
+      description: current.description || "",
+      fields: (current.fields || []).map((f) => ({
+        ...f,
+        options: f.options ? Object.values(f.options) : [],
+        _keyEdited: true,
+      })),
+    });
+  }, [current]);
 
   /* =====================
      Handlers
   ===================== */
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -110,8 +114,6 @@ const UpsertCriteria = () => {
       field._keyEdited = true;
     } else if (key === "field_type") {
       field.field_type = value;
-
-      // reset options if not SELECT
       if (value !== "SELECT") {
         field.options = [];
       }
@@ -132,7 +134,6 @@ const UpsertCriteria = () => {
         .map((v) => v.trim())
         .filter(Boolean),
     };
-
     setValues((prev) => ({ ...prev, fields: updated }));
   };
 
@@ -154,9 +155,8 @@ const UpsertCriteria = () => {
   };
 
   /* =====================
-     Submit
+     Submit (CREATE / UPDATE)
   ===================== */
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -173,49 +173,51 @@ const UpsertCriteria = () => {
     setSaving(true);
 
     try {
-      // 🔁 UI → API conversion
       const payload = {
-        ...values,
+        name: values.name,
+        description: values.description,
         fields: values.fields.map(({ _keyEdited, ...field }) => {
           if (field.field_type === "SELECT") {
-            const optionsDict = {};
-            field.options.forEach((opt) => {
-              optionsDict[opt] = opt;
-            });
-
-            return {
-              ...field,
-              options: optionsDict, // ✅ backend expects dict
-            };
+            const options = {};
+            field.options.forEach((o) => (options[o] = o));
+            return { ...field, options };
           }
-
-          return {
-            ...field,
-            options: null,
-          };
+          return { ...field, options: null };
         }),
       };
 
-      await api.post("/forms", payload);
-      toast.success("Criteria created successfully");
+      if (isEdit) {
+        // ✅ UPDATE EXISTING CRITERIA
+        await dispatch(
+          updateCriteriaAction({ id: criteriaId, payload })
+        ).unwrap();
+
+        toast.success("Criteria updated successfully");
+      } else {
+        // ✅ CREATE NEW CRITERIA
+        await dispatch(createCriteriaAction(payload)).unwrap();
+        toast.success("Criteria created successfully");
+      }
+
       navigate("/criteria");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading && isEdit && !values.fields.length) {
+    return <Loading />;
+  }
 
   /* =====================
      UI
   ===================== */
-
   return (
     <>
       <PageHeader
-        icon={isClone ? BiCopy : BiPlus}
-        title={isClone ? "Clone Criteria" : "Create Criteria"}
-        subtitle="Define global evaluation criteria for nominations"
+        icon={isEdit ? BiEdit : BiPlus}
+        title={isEdit ? "Edit Criteria" : "Create Criteria"}
+        subtitle="Define reusable evaluation criteria"
       />
 
       <Card>
@@ -254,7 +256,6 @@ const UpsertCriteria = () => {
             {values.fields.map((field, idx) => (
               <div key={idx} className="border rounded p-3 mb-2">
                 <div className="row g-2">
-                  {/* Label */}
                   <div className="col-md-4">
                     <input
                       className="form-control"
@@ -267,7 +268,6 @@ const UpsertCriteria = () => {
                     />
                   </div>
 
-                  {/* Field Key */}
                   <div className="col-md-3">
                     <input
                       className="form-control"
@@ -280,7 +280,6 @@ const UpsertCriteria = () => {
                     />
                   </div>
 
-                  {/* Type */}
                   <div className="col-md-3">
                     <select
                       className="form-select"
@@ -297,7 +296,6 @@ const UpsertCriteria = () => {
                     </select>
                   </div>
 
-                  {/* Required */}
                   <div className="col-md-2 d-flex align-items-center">
                     <input
                       type="checkbox"
@@ -310,7 +308,6 @@ const UpsertCriteria = () => {
                     Required
                   </div>
 
-                  {/* SELECT OPTIONS */}
                   {field.field_type === "SELECT" && (
                     <div className="col-12">
                       <input
@@ -322,13 +319,9 @@ const UpsertCriteria = () => {
                         }
                         required
                       />
-                      <small className="text-muted">
-                        Example: Low, Medium, High, Exceptional
-                      </small>
                     </div>
                   )}
 
-                  {/* Remove */}
                   <div className="col-12 text-end">
                     <AppButton
                       variant="outline-danger"
@@ -351,7 +344,7 @@ const UpsertCriteria = () => {
 
             <div className="col-12 d-flex gap-2 mt-3">
               <AppButton type="submit" loading={saving}>
-                Create Criteria
+                {isEdit ? "Save Changes" : "Create Criteria"}
               </AppButton>
 
               <AppButton

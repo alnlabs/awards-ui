@@ -25,7 +25,9 @@ import {
 ===================== */
 
 const ViewNomination = () => {
-  const { id } = useParams();
+  // ✅ FIX: param name MUST match route
+  const { nominationId } = useParams();
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -35,12 +37,15 @@ const ViewNomination = () => {
   const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    dispatch(fetchNominationById(id));
+    // ✅ SAFETY GUARD
+    if (nominationId) {
+      dispatch(fetchNominationById(nominationId));
+    }
 
     return () => {
       dispatch(clearCurrentNomination());
     };
-  }, [dispatch, id]);
+  }, [dispatch, nominationId]);
 
   if (loading || !currentNomination) return <Loading />;
 
@@ -121,8 +126,8 @@ const ViewNomination = () => {
           {answers.length === 0 ? (
             <p className="text-muted">No answers submitted</p>
           ) : (
-            answers.map((a) => (
-              <div key={a.id} className="mb-3">
+            answers.map((a, idx) => (
+              <div key={idx} className="mb-3">
                 <label className="fw-semibold">{a.field_key}</label>
                 <div className="border rounded p-2 bg-light">
                   {typeof a.value === "object"
@@ -154,7 +159,7 @@ const ViewNomination = () => {
                   </div>
 
                   <div className="mb-1">
-                    <strong>Score:</strong> {r.score} / 5
+                    <strong>Score:</strong> {r.score}
                   </div>
 
                   {r.comments && (

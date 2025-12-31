@@ -1,68 +1,81 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { authService } from '../../services/authService';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { authService } from "../../services/authService";
 
-// Load user from localStorage on init
+/* =====================
+   Initial State
+===================== */
 const initialState = {
-  user: authService.getUser(),
-  token: authService.getToken(),
+  user: authService.getUser(), // from localStorage
+  token: authService.getToken(), // from localStorage
   loading: false,
   error: null,
 };
 
-// Async thunks
+/* =====================
+   Thunks
+===================== */
+
+/**
+ * LOGIN
+ * authService.login → returns { access_token }
+ * authService.getMe → returns user object
+ */
 export const login = createAsyncThunk(
-  'auth/login',
+  "auth/login",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await authService.login(email, password);
-      if (response.status === 'success') {
-        // Fetch user details after login
-        const meResponse = await authService.getMe();
-        return {
-          token: response.data.access_token,
-          user: meResponse.data,
-        };
-      }
-      return rejectWithValue(response.error || 'Login failed');
+      const authData = await authService.login(email, password);
+      // authData = { access_token }
+
+      const user = await authService.getMe();
+
+      return {
+        token: authData.access_token,
+        user,
+      };
     } catch (error) {
-      return rejectWithValue(error.error || 'Login failed');
+      return rejectWithValue(error?.error || "Login failed");
     }
   }
 );
 
+/**
+ * REGISTER
+ * Returns created user OR success message (depends on backend)
+ */
 export const register = createAsyncThunk(
-  'auth/register',
+  "auth/register",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await authService.register(data);
-      if (response.status === 'success') {
-        return response.data;
-      }
-      return rejectWithValue(response.error || 'Registration failed');
+      return await authService.register(data);
     } catch (error) {
-      return rejectWithValue(error.error || 'Registration failed');
+      return rejectWithValue(error?.error || "Registration failed");
     }
   }
 );
 
+/**
+ * GET CURRENT USER
+ */
 export const getMe = createAsyncThunk(
-  'auth/getMe',
+  "auth/getMe",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await authService.getMe();
-      if (response.status === 'success') {
-        return response.data;
-      }
-      return rejectWithValue(response.error || 'Failed to fetch user');
+      return await authService.getMe();
     } catch (error) {
-      return rejectWithValue(error.error || 'Failed to fetch user');
+      return rejectWithValue(error?.error || "Failed to fetch user");
     }
   }
 );
 
+/* =====================
+   Slice
+===================== */
+
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
+
   reducers: {
     logout: (state) => {
       state.user = null;
@@ -73,9 +86,11 @@ const authSlice = createSlice({
       state.error = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
-      // Login
+
+      /* ---------- LOGIN ---------- */
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -89,7 +104,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Register
+
+      /* ---------- REGISTER ---------- */
       .addCase(register.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -101,7 +117,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Get Me
+
+      /* ---------- GET ME ---------- */
       .addCase(getMe.pending, (state) => {
         state.loading = true;
       })
@@ -118,4 +135,3 @@ const authSlice = createSlice({
 
 export const { logout, clearError } = authSlice.actions;
 export default authSlice.reducer;
-

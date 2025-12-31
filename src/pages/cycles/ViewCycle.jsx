@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Modal, Badge } from "react-bootstrap";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
+import { BiEdit } from "react-icons/bi";
 
 import PageHeader from "../../components/common/PageHeader";
 import { Card, CardBody } from "../../components/common/Card";
@@ -12,38 +13,58 @@ import api from "../../services/api";
 import { USER_ROLES } from "../../utils/constants";
 
 const ViewCycle = () => {
-  const { id } = useParams();
+  // ✅ CORRECT PARAM NAME
+  const { cycleId } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
   const [cycle, setCycle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [pendingStatus, setPendingStatus] = useState(null); // "OPEN" | "CLOSED"
+  const [pendingStatus, setPendingStatus] = useState(null); // OPEN | CLOSED
   const [updating, setUpdating] = useState(false);
 
   /* =====================
      Fetch cycle
   ===================== */
   useEffect(() => {
-    api
-      .get(`/cycles/${id}`)
-      .then((res) => setCycle(res.data))
-      .catch(() => {
-        toast.error("Failed to load cycle");
-        navigate("/cycles");
-      })
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    if (!cycleId) {
+      setError("Invalid cycle id");
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadCycle = async () => {
+      try {
+        // ✅ api returns BUSINESS DATA directly
+        const data = await api.get(`/cycles/${cycleId}`);
+        if (mounted) setCycle(data);
+      } catch {
+        if (mounted) {
+          setError("Failed to load award cycle");
+          toast.error("Failed to load cycle");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadCycle();
+    return () => {
+      mounted = false;
+    };
+  }, [cycleId]);
 
   /* =====================
      Update Status
   ===================== */
   const updateStatus = async () => {
-    if (!pendingStatus) return;
+    if (!pendingStatus || !cycle) return;
 
     setUpdating(true);
-
     try {
       await api.patch(`/cycles/${cycle.id}/status`, {
         status: pendingStatus,
@@ -59,9 +80,43 @@ const ViewCycle = () => {
     }
   };
 
+  /* =====================
+     Render Guards
+  ===================== */
   if (loading) return <Loading />;
-  if (!cycle) return null;
 
+  if (error) {
+    return (
+      <Card>
+        <CardBody className="text-center">
+          <h5 className="mb-2">{error}</h5>
+          <p className="text-muted">
+            The award cycle may not exist or you don’t have access.
+          </p>
+          <AppButton onClick={() => navigate("/cycles")}>
+            Back to Cycles
+          </AppButton>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  if (!cycle) {
+    return (
+      <Card>
+        <CardBody className="text-center">
+          <h5>Unable to load cycle</h5>
+          <AppButton onClick={() => navigate("/cycles")}>
+            Back to Cycles
+          </AppButton>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  /* =====================
+     UI
+  ===================== */
   return (
     <>
       <PageHeader
@@ -69,17 +124,18 @@ const ViewCycle = () => {
         subtitle={`${cycle.quarter} ${cycle.year}`}
         actions={
           <>
-            {/* Edit → DRAFT only */}
+            {/* Edit (HR + DRAFT only) */}
             {user?.role === USER_ROLES.HR && cycle.status === "DRAFT" && (
               <AppButton
+                icon={BiEdit}
                 variant="outline-primary"
-                onClick={() => navigate(`/cycles/${cycle.id}/edit`)}
+                onClick={() => navigate(`/cycles/${cycleId}/edit`)}
               >
                 Edit
               </AppButton>
             )}
 
-            {/* Open → DRAFT */}
+            {/* Open cycle */}
             {user?.role === USER_ROLES.HR && cycle.status === "DRAFT" && (
               <AppButton
                 variant="success"
@@ -89,7 +145,7 @@ const ViewCycle = () => {
               </AppButton>
             )}
 
-            {/* Close → OPEN */}
+            {/* Close cycle */}
             {user?.role === USER_ROLES.HR && cycle.status === "OPEN" && (
               <AppButton
                 variant="danger"
@@ -156,7 +212,7 @@ const ViewCycle = () => {
               </p>
               <ul>
                 <li>Nominations will be enabled</li>
-                <li>Managers can start submissions</li>
+                <li>Managers can submit nominations</li>
               </ul>
             </>
           ) : (
@@ -165,18 +221,14 @@ const ViewCycle = () => {
                 You are about to <strong>close this award cycle</strong>.
               </p>
               <ul>
-                <li>No new nominations can be submitted</li>
-                <li>Pending reviews must be completed</li>
+                <li>No new nominations allowed</li>
+                <li>All reviews must be completed</li>
                 <li>
                   <strong>This action cannot be undone</strong>
                 </li>
               </ul>
             </>
           )}
-
-          <div className="alert alert-warning mb-0">
-            Please confirm only if you are absolutely sure.
-          </div>
         </Modal.Body>
 
         <Modal.Footer>

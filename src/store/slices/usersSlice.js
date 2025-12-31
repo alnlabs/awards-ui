@@ -1,70 +1,100 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../services/api";
+
+/* =====================
+   THUNKS
+===================== */
 
 export const fetchUsers = createAsyncThunk(
-  'users/fetchUsers',
+  "users/fetchUsers",
   async (filters, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams(filters || {}).toString();
-      const url = params ? `/users?${params}` : '/users';
-      const response = await api.get(url);
-      return response.data || [];
+      const url = params ? `/users?${params}` : "/users";
+      return await api.get(url); // ✅ array
     } catch (error) {
-      return rejectWithValue(error.error || 'Failed to fetch users');
+      return rejectWithValue(
+        error?.error || error?.message || "Failed to fetch users"
+      );
     }
   }
 );
 
 export const fetchUserById = createAsyncThunk(
-  'users/fetchUserById',
+  "users/fetchUserById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/users/${id}`);
-      return response.data;
+      return await api.get(`/users/${id}`); // ✅ object
     } catch (error) {
-      return rejectWithValue(error.error || 'Failed to fetch user');
+      return rejectWithValue(
+        error?.error || error?.message || "Failed to fetch user"
+      );
     }
   }
 );
 
 export const createUser = createAsyncThunk(
-  'users/createUser',
+  "users/createUser",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await api.post('/users', data);
-      return response.data;
+      return await api.post("/users", data); // ✅ created user
     } catch (error) {
-      return rejectWithValue(error.error || 'Failed to create user');
+      return rejectWithValue(
+        error?.error || error?.message || "Failed to create user"
+      );
     }
   }
 );
 
 export const updateUser = createAsyncThunk(
-  'users/updateUser',
+  "users/updateUser",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/users/${id}`, data);
-      return response.data;
+      return await api.patch(`/users/${id}`, data); // ✅ updated user
     } catch (error) {
-      return rejectWithValue(error.error || 'Failed to update user');
+      return rejectWithValue(
+        error?.error || error?.message || "Failed to update user"
+      );
     }
   }
 );
 
 export const deleteUser = createAsyncThunk(
-  'users/deleteUser',
+  "users/deleteUser",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`/users/${id}`);
+      await api.delete(`/users/${id}`);
       return id;
     } catch (error) {
-      return rejectWithValue(error.error || 'Failed to delete user');
+      return rejectWithValue(
+        error?.error || error?.message || "Failed to delete user"
+      );
     }
   }
 );
 
+export const bulkDeleteUsers = createAsyncThunk(
+  "users/bulkDeleteUsers",
+  async (userIds, { rejectWithValue }) => {
+    try {
+      await api.post("/users/bulk-delete", {
+        user_ids: userIds,
+      });
+      return userIds;
+    } catch (error) {
+      return rejectWithValue(
+        error?.error || error?.message || "Failed to bulk delete users"
+      );
+    }
+  }
+);
+
+/* =====================
+   SLICE
+===================== */
+
 const usersSlice = createSlice({
-  name: 'users',
+  name: "users",
   initialState: {
     users: [],
     currentUser: null,
@@ -72,15 +102,17 @@ const usersSlice = createSlice({
     error: null,
   },
   reducers: {
-    clearError: (state) => {
+    clearError(state) {
       state.error = null;
     },
-    clearCurrentUser: (state) => {
+    clearCurrentUser(state) {
       state.currentUser = null;
     },
   },
   extraReducers: (builder) => {
     builder
+
+      /* ---------- Fetch Users ---------- */
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -93,14 +125,20 @@ const usersSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+
+      /* ---------- Fetch User By ID ---------- */
       .addCase(fetchUserById.fulfilled, (state, action) => {
         state.currentUser = action.payload;
       })
+
+      /* ---------- Create ---------- */
       .addCase(createUser.fulfilled, (state, action) => {
         state.users.push(action.payload);
       })
+
+      /* ---------- Update ---------- */
       .addCase(updateUser.fulfilled, (state, action) => {
-        const index = state.users.findIndex(u => u.id === action.payload.id);
+        const index = state.users.findIndex((u) => u.id === action.payload.id);
         if (index !== -1) {
           state.users[index] = action.payload;
         }
@@ -108,12 +146,46 @@ const usersSlice = createSlice({
           state.currentUser = action.payload;
         }
       })
+
+      /* ---------- Delete ---------- */
       .addCase(deleteUser.fulfilled, (state, action) => {
-        state.users = state.users.filter(u => u.id !== action.payload);
+        state.users = state.users.filter((u) => u.id !== action.payload);
+      })
+
+      /* ---------- Bulk Delete ---------- */
+      .addCase(bulkDeleteUsers.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(bulkDeleteUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = state.users.filter((u) => !action.payload.includes(u.id));
+      })
+      .addCase(bulkDeleteUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
+/* =====================
+   SELECTORS
+===================== */
+
+// Get all users
+export const selectUsers = (state) => state.users.users;
+
+// Get user by ID (SAFE)
+export const selectUserById = (state, userId) =>
+  state.users.users.find((u) => u.id === userId) || null;
+
+// Map users by ID (FAST LOOKUP)
+export const selectUsersById = (state) => {
+  const map = {};
+  state.users.users.forEach((u) => {
+    map[u.id] = u;
+  });
+  return map;
+};
+
 export const { clearError, clearCurrentUser } = usersSlice.actions;
 export default usersSlice.reducer;
-

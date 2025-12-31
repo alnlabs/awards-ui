@@ -5,9 +5,10 @@ import styled from "styled-components";
 import { BiTrophy, BiAward, BiMedal } from "react-icons/bi";
 
 import {
-  fetchCurrentAwards,
-  fetchAwardsHistory,
+  fetchNominationsWithScores,
+  finalizeCycleAwards,
 } from "../../store/slices/awardsSlice";
+
 import Loading from "../../components/common/Loading";
 import PageHeader from "../../components/common/PageHeader";
 import { Card as StyledCard, CardBody } from "../../components/common/Card";
@@ -58,23 +59,24 @@ const WinnerCard = styled(StyledCard)`
 
 const Awards = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const { current, loading } = useSelector((state) => state.awards);
+
+  const { activeCycle } = useSelector((state) => state.cycles);
+  const { nominationsWithScores, loading } = useSelector(
+    (state) => state.awards
+  );
 
   useEffect(() => {
-    dispatch(fetchCurrentAwards());
-    if (user?.role === "HR") {
-      dispatch(fetchAwardsHistory());
+    if (activeCycle?.id) {
+      dispatch(fetchNominationsWithScores(activeCycle.id));
     }
-  }, [dispatch, user]);
+  }, [dispatch, activeCycle]);
 
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
+
+  const winners = nominationsWithScores.filter((n) => n.status === "FINALIZED");
 
   return (
     <>
-      {/* Page Header */}
       <PageHeader
         icon={BiTrophy}
         title="Awards"
@@ -82,7 +84,7 @@ const Awards = () => {
       />
 
       {/* Empty State */}
-      {current.length === 0 ? (
+      {winners.length === 0 ? (
         <StyledCard>
           <CardBody className="text-center py-5">
             <BiTrophy
@@ -92,23 +94,32 @@ const Awards = () => {
                 marginBottom: "1rem",
               }}
             />
-            <h4>No awards yet</h4>
-            <p className="text-muted">Awards will appear here once finalized</p>
+            <h4>No awards finalized yet</h4>
+            <p className="text-muted">
+              Awards will appear once HR finalizes the cycle
+            </p>
           </CardBody>
         </StyledCard>
       ) : (
         <>
-          {/* Award Types */}
+          {/* Award Overview */}
           <AwardsGrid>
-            {current.map((award) => (
-              <Col key={award.id} xs={12} md={6} lg={4}>
+            {winners.map((n) => (
+              <Col key={n.nomination_id} xs={12} md={6} lg={4}>
                 <AwardCard>
                   <CardBody>
                     <AwardIcon>
                       <BiAward />
                     </AwardIcon>
-                    <h4 className="mb-1">{award.award_type}</h4>
-                    <p className="mb-0">{award.cycle?.name || "N/A"}</p>
+                    <h4 className="mb-1">Employee Award</h4>
+                    <p className="mb-0">
+                      Avg Score:{" "}
+                      <strong>
+                        {n.average_score !== null
+                          ? n.average_score.toFixed(2)
+                          : "N/A"}
+                      </strong>
+                    </p>
                   </CardBody>
                 </AwardCard>
               </Col>
@@ -117,8 +128,8 @@ const Awards = () => {
 
           {/* Winners */}
           <WinnersList>
-            {current.map((award) => (
-              <WinnerCard key={award.id}>
+            {winners.map((n, index) => (
+              <WinnerCard key={n.nomination_id}>
                 <CardBody>
                   <BiMedal
                     style={{
@@ -126,10 +137,10 @@ const Awards = () => {
                       marginBottom: "0.75rem",
                     }}
                   />
-                  <h5 className="mb-1">{award.winner?.name || "N/A"}</h5>
-                  <p className="mb-2">{award.award_type}</p>
+                  <h5 className="mb-1">{n.nominee_id}</h5>
+                  <p className="mb-2">Final Score</p>
                   <Badge bg="light" text="dark">
-                    Rank #{award.rank}
+                    Rank #{index + 1}
                   </Badge>
                 </CardBody>
               </WinnerCard>

@@ -32,6 +32,10 @@ const RoleBadge = styled(Badge)`
   text-transform: uppercase;
 `;
 
+const TableWrapper = styled.div`
+  position: relative;
+`;
+
 /* =====================
    Component
 ===================== */
@@ -40,11 +44,7 @@ const Users = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const {
-    users = [],
-    loading,
-    total = 0,
-  } = useSelector((state) => state.users);
+  const { users = [], loading } = useSelector((state) => state.users);
 
   /* =====================
      Pagination
@@ -52,8 +52,18 @@ const Users = () => {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  // ✅ NEW: track first load
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
   useEffect(() => {
-    dispatch(fetchUsers({ page, page_size: pageSize }));
+    dispatch(
+      fetchUsers({
+        skip: (page - 1) * pageSize,
+        limit: pageSize,
+      })
+    ).finally(() => {
+      setHasLoadedOnce(true);
+    });
   }, [dispatch, page]);
 
   /* =====================
@@ -116,14 +126,12 @@ const Users = () => {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => (
-          <div className="d-flex gap-2">
-            <AppButton
-              variant="outline-primary"
-              size="sm"
-              icon={BiEdit}
-              onClick={() => navigate(`/users/${row.original.id}/edit`)}
-            />
-          </div>
+          <AppButton
+            variant="outline-primary"
+            size="sm"
+            icon={BiEdit}
+            onClick={() => navigate(`/users/${row.original.id}/edit`)}
+          />
         ),
       },
     ],
@@ -137,14 +145,6 @@ const Users = () => {
     data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    pageCount: Math.ceil(total / pageSize),
-    state: {
-      pagination: {
-        pageIndex: page - 1,
-        pageSize,
-      },
-    },
   });
 
   /* =====================
@@ -152,17 +152,24 @@ const Users = () => {
   ===================== */
   const handleBulkDelete = async () => {
     const ids = table.getSelectedRowModel().rows.map((r) => r.original.id);
-
     if (!ids.length) return;
 
     await dispatch(bulkDeleteUsers(ids));
     table.resetRowSelection();
-    dispatch(fetchUsers({ page, page_size: pageSize }));
+
+    dispatch(
+      fetchUsers({
+        skip: (page - 1) * pageSize,
+        limit: pageSize,
+      })
+    );
   };
 
-  if (loading) return <Loading />;
+  // ✅ Only block UI on first load
+  if (loading && !hasLoadedOnce) return <Loading />;
 
   const selectedCount = table.getSelectedRowModel().rows.length;
+  const total = users.length;
 
   return (
     <>
@@ -194,45 +201,52 @@ const Users = () => {
         </CardHeader>
 
         <CardBody>
-          <div className="table-responsive">
-            <Table hover align="middle">
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id}>
-                    {hg.headers.map((header) => (
-                      <th key={header.id}>
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
+          <TableWrapper>
+            {/* ✅ Optional overlay spinner (no flash) */}
+            {loading && hasLoadedOnce && (
+              <div className="position-absolute top-50 start-50 translate-middle">
+                <Loading size="sm" />
+              </div>
+            )}
 
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
+            <div className="table-responsive">
+              <Table hover align="middle">
+                <thead>
+                  {table.getHeaderGroups().map((hg) => (
+                    <tr key={hg.id}>
+                      {hg.headers.map((header) => (
+                        <th key={header.id}>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+
+                <tbody>
+                  {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          </TableWrapper>
 
           {/* Pagination */}
           <div className="d-flex justify-content-between mt-3">
-            <span>
-              Page {page} of {Math.ceil(total / pageSize)}
-            </span>
+            <span>Page {page}</span>
             <div className="d-flex gap-2">
               <AppButton
                 size="sm"
@@ -243,7 +257,7 @@ const Users = () => {
               </AppButton>
               <AppButton
                 size="sm"
-                disabled={page * pageSize >= total}
+                disabled={users.length < pageSize}
                 onClick={() => setPage((p) => p + 1)}
               >
                 Next

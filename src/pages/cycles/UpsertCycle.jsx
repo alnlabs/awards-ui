@@ -19,8 +19,8 @@ const EMPTY_FORM = {
 };
 
 const UpsertCycle = () => {
-  const { id } = useParams();
-  const isEdit = Boolean(id);
+  const { cycleId } = useParams(); // ✅ FIXED
+  const isEdit = Boolean(cycleId); // ✅ FIXED
   const navigate = useNavigate();
 
   const [values, setValues] = useState(EMPTY_FORM);
@@ -37,9 +37,10 @@ const UpsertCycle = () => {
 
     const fetchCycle = async () => {
       try {
-        const res = await api.get(`/cycles/${id}`);
+        // api interceptor returns BUSINESS DATA directly
+        const cycle = await api.get(`/cycles/${cycleId}`);
         if (mounted) {
-          setValues(res.data);
+          setValues(cycle); // ✅ business data
           setLoading(false);
         }
       } catch {
@@ -49,15 +50,15 @@ const UpsertCycle = () => {
     };
 
     fetchCycle();
+
     return () => {
       mounted = false;
     };
-  }, [id, isEdit, navigate]);
+  }, [cycleId, isEdit, navigate]);
 
   /* =====================
-     Submit (react-hook-form)
+     Submit
   ===================== */
-
   const handleSubmit = async (data) => {
     if (!data.quarter) {
       toast.error("Quarter is required");
@@ -73,7 +74,7 @@ const UpsertCycle = () => {
 
     try {
       if (isEdit) {
-        await api.patch(`/cycles/${id}`, data);
+        await api.patch(`/cycles/${cycleId}`, data); // ✅ FIXED
         toast.success("Cycle updated successfully");
       } else {
         await api.post("/cycles", data);
@@ -91,7 +92,6 @@ const UpsertCycle = () => {
   /* =====================
      UI
   ===================== */
-
   return (
     <>
       <PageHeader
