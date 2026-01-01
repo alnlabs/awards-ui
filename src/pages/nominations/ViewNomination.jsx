@@ -1,13 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "react-bootstrap";
-import { BiArrowBack, BiUser, BiCheckCircle } from "react-icons/bi";
+import { BiArrowBack, BiUser, BiCheckCircle, BiGroup } from "react-icons/bi";
 
 import {
   fetchNominationById,
   clearCurrentNomination,
 } from "../../store/slices/nominationsSlice";
+
+import { fetchAssignmentsForNomination } from "../../store/slices/panelAssignmentsSlice";
+
 import { STATUS_COLORS, USER_ROLES } from "../../utils/constants";
 
 import PageHeader from "../../components/common/PageHeader";
@@ -20,26 +23,38 @@ import {
   CardBody,
 } from "../../components/common/Card";
 
+import AssignPanelsModal from "./AssignPanelsModal";
+
 /* =====================
    Component
 ===================== */
 
 const ViewNomination = () => {
-  // ✅ FIX: param name MUST match route
   const { nominationId } = useParams();
-
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { currentNomination, loading } = useSelector(
     (state) => state.nominations
   );
+
+  // ✅ CORRECT SELECTOR (THIS WAS THE BUG)
+  const assignedPanels =
+    useSelector(
+      (state) => state.panelAssignments.assignmentsByNomination?.[nominationId]
+    ) || [];
+
   const { user } = useSelector((state) => state.auth);
 
+  const [showAssignModal, setShowAssignModal] = useState(false);
+
+  /* =====================
+     Load data
+  ===================== */
   useEffect(() => {
-    // ✅ SAFETY GUARD
     if (nominationId) {
       dispatch(fetchNominationById(nominationId));
+      dispatch(fetchAssignmentsForNomination(nominationId));
     }
 
     return () => {
@@ -59,20 +74,42 @@ const ViewNomination = () => {
     reviews = [],
   } = currentNomination;
 
+  /* =====================
+     Permissions
+  ===================== */
+  const canAssignPanels =
+    user?.role === USER_ROLES.HR && ["SUBMITTED", "HR_REVIEW"].includes(status);
+
+  /* =====================
+     Render
+  ===================== */
   return (
     <>
+      {/* ================= HEADER ================= */}
       <PageHeader
         icon={BiCheckCircle}
         title="View Nomination"
         subtitle={`Status: ${status}`}
         actions={
-          <AppButton
-            variant="secondary"
-            icon={BiArrowBack}
-            onClick={() => navigate("/nominations")}
-          >
-            Back
-          </AppButton>
+          <>
+            {canAssignPanels && (
+              <AppButton
+                className="me-2"
+                icon={BiGroup}
+                onClick={() => setShowAssignModal(true)}
+              >
+                Assign to Panel
+              </AppButton>
+            )}
+
+            <AppButton
+              variant="secondary"
+              icon={BiArrowBack}
+              onClick={() => navigate("/nominations")}
+            >
+              Back
+            </AppButton>
+          </>
         }
       />
 
@@ -140,6 +177,47 @@ const ViewNomination = () => {
         </CardBody>
       </Card>
 
+      {/* ================= ASSIGNED PANELS (FIXED) ================= */}
+      {/* ================= ASSIGNED PANELS WITH MEMBERS ================= */}
+      {assignedPanels.length > 0 && (
+        <Card className="mb-3">
+          <CardHeader>
+            <CardTitle>Assigned Panels</CardTitle>
+          </CardHeader>
+
+          <CardBody>
+            {assignedPanels.map((a) => (
+              <div key={a.assignment_id} className="mb-3 border rounded p-3">
+                <div className="fw-semibold">{a.panel.name}</div>
+
+                <small className="text-muted d-block mb-2">
+                  Status: {a.status} · Assigned at{" "}
+                  {new Date(a.assigned_at).toLocaleString()}
+                </small>
+
+                {/* PANEL MEMBERS */}
+                <div>
+                  <strong>Members</strong>
+                  {a.panel.members.length === 0 ? (
+                    <div className="text-muted small">No members</div>
+                  ) : (
+                    <ul className="list-group list-group-flush mt-1">
+                      {a.panel.members.map((m) => (
+                        <li key={m.id} className="list-group-item px-0 py-1">
+                          <BiUser className="me-2" />
+                          {m.name}{" "}
+                          <span className="text-muted small">({m.email})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+      )}
+
       {/* ================= PANEL REVIEWS ================= */}
       {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.PANEL) && (
         <Card>
@@ -177,6 +255,14 @@ const ViewNomination = () => {
             )}
           </CardBody>
         </Card>
+      )}
+
+      {/* ================= ASSIGN PANELS MODAL ================= */}
+      {showAssignModal && (
+        <AssignPanelsModal
+          nominationId={nominationId}
+          onClose={() => setShowAssignModal(false)}
+        />
       )}
     </>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, useFieldArray } from "react-hook-form";
+import { useDispatch, useSelector } from "react-redux";
 import { BiUser, BiUpload, BiDownload } from "react-icons/bi";
 import toast from "react-hot-toast";
 
@@ -8,7 +9,15 @@ import PageHeader from "../../components/common/PageHeader";
 import { Card, CardBody } from "../../components/common/Card";
 import AppButton from "../../components/common/AppButton";
 import Loading from "../../components/common/Loading";
-import api from "../../services/api";
+
+import {
+  fetchUserById,
+  createUser,
+  updateUser,
+  clearCurrentUser,
+} from "../../store/slices/usersSlice";
+
+import api from "../../services/api"; // ✅ only for BULK upload
 import { USER_ROLES } from "../../utils/constants";
 
 import FormInput from "../../components/form/FormInput";
@@ -51,12 +60,15 @@ const DEFAULT_VALUES = {
 };
 
 const UpsertUser = () => {
-  const { id } = useParams();
-  const isEdit = Boolean(id);
+  const { userId } = useParams();
+  const isEdit = Boolean(userId);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   /* 🔑 FILE INPUT REF */
   const fileInputRef = useRef(null);
+
+  const { currentUser, loading } = useSelector((state) => state.users);
 
   const {
     register,
@@ -68,7 +80,6 @@ const UpsertUser = () => {
   } = useForm({
     defaultValues: DEFAULT_VALUES,
     mode: "onChange",
-    reValidateMode: "onChange",
     shouldUnregister: false,
   });
 
@@ -77,67 +88,63 @@ const UpsertUser = () => {
     name: "security_questions",
   });
 
-  const [loading, setLoading] = useState(isEdit);
   const [bulkUploading, setBulkUploading] = useState(false);
 
   /* =====================
-     BULK UPLOAD (REF-BASED)
+     FETCH USER (EDIT MODE)
+  ===================== */
+  useEffect(() => {
+    if (!isEdit) return;
+
+    dispatch(fetchUserById(userId));
+
+    return () => {
+      dispatch(clearCurrentUser());
+    };
+  }, [dispatch, userId, isEdit]);
+
+  /* =====================
+     RESET FORM ON LOAD
+  ===================== */
+  useEffect(() => {
+    if (!isEdit || !currentUser) return;
+
+    reset({
+      name: currentUser.name,
+      email: currentUser.email,
+      employee_code: currentUser.employee_code,
+      role: currentUser.role,
+      password: "",
+      confirmPassword: "",
+      security_questions: DEFAULT_VALUES.security_questions,
+    });
+  }, [isEdit, currentUser, reset]);
+
+  /* =====================
+     BULK UPLOAD
   ===================== */
   const handleBulkUpload = async () => {
-    const input = fileInputRef.current;
-    const file = input?.files?.[0];
-
-    if (!file) {
-      toast.error("Please select a file");
-      return;
-    }
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) return toast.error("Please select a file");
 
     const formData = new FormData();
     formData.append("file", file);
-
-    // 🔍 DEBUG (you should see File object here)
-    console.log("Uploading file:", file);
-    console.log("FormData:", [...formData.entries()]);
 
     try {
       setBulkUploading(true);
       await api.post("/users/bulk-upload", formData);
       toast.success("Bulk upload completed");
       navigate("/users");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Bulk upload failed");
     } finally {
       setBulkUploading(false);
-      input.value = ""; // allow same file re-upload
+      fileInputRef.current.value = "";
     }
   };
 
   /* =====================
-     FETCH USER (EDIT)
-  ===================== */
-  useEffect(() => {
-    if (!isEdit) return;
-
-    api
-      .get(`/users/${id}`)
-      .then((res) =>
-        reset({
-          ...res.data,
-          password: "",
-          confirmPassword: "",
-          security_questions: DEFAULT_VALUES.security_questions,
-        })
-      )
-      .catch(() => {
-        toast.error("Failed to load user");
-        navigate("/users", { replace: true });
-      })
-      .finally(() => setLoading(false));
-  }, [id, isEdit, navigate, reset]);
-
-  /* =====================
-     FORM SUBMIT
+     SUBMIT
   ===================== */
   const onSubmit = async (data) => {
     try {
@@ -148,30 +155,37 @@ const UpsertUser = () => {
 
         if (data.password !== data.confirmPassword)
           return toast.error("Passwords do not match");
-      }
 
-      if (isEdit) {
-        await api.patch(`/users/${id}`, {
-          name: data.name,
-          employee_code: data.employee_code,
-          role: data.role,
-        });
-        toast.success("User updated");
-      } else {
-        await api.post("/users", {
-          name: data.name,
-          email: data.email,
-          employee_code: data.employee_code,
-          role: data.role,
-          password: data.password,
-          security_questions: data.security_questions,
-        });
+        await dispatch(
+          createUser({
+            name: data.name,
+            email: data.email,
+            employee_code: data.employee_code,
+            role: data.role,
+            password: data.password,
+            security_questions: data.security_questions,
+          })
+        ).unwrap();
+
         toast.success("User created");
+      } else {
+        await dispatch(
+          updateUser({
+            id: userId,
+            data: {
+              name: data.name,
+              employee_code: data.employee_code,
+              role: data.role,
+            },
+          })
+        ).unwrap();
+
+        toast.success("User updated");
       }
 
       navigate("/users");
-    } catch {
-      toast.error("Operation failed");
+    } catch (err) {
+      toast.error(err || "Operation failed");
     }
   };
 
@@ -235,7 +249,7 @@ const UpsertUser = () => {
       )}
 
       {/* =====================
-         USER FORM
+         FORM
       ===================== */}
       <Card>
         <CardBody>
@@ -246,7 +260,6 @@ const UpsertUser = () => {
               register={register}
               error={errors.name}
             />
-
             <FormInput
               label="Email"
               name="email"
@@ -255,7 +268,6 @@ const UpsertUser = () => {
               error={errors.email}
               disabled={isEdit}
             />
-
             <FormInput
               label="Employee Code"
               name="employee_code"
@@ -283,14 +295,12 @@ const UpsertUser = () => {
                   register={register}
                   error={errors.password}
                 />
-
                 <FormPassword
                   label="Confirm Password"
                   name="confirmPassword"
                   register={register}
                   error={errors.confirmPassword}
                 />
-
                 <SecurityQuestions
                   control={control}
                   register={register}
@@ -302,7 +312,7 @@ const UpsertUser = () => {
               </>
             )}
 
-            <div className="d-flex justify-content-end gap-2 mt-4">
+            <div className="d-flex justify-content-end mt-4">
               <AppButton
                 type="submit"
                 loading={isSubmitting}

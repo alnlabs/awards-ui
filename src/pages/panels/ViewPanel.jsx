@@ -20,6 +20,8 @@ import {
 import { fetchUsers } from "../../store/slices/usersSlice";
 import { fetchCriteria } from "../../store/slices/criteriaSlice";
 
+import { USER_ROLES } from "../../utils/constants";
+
 export default function ViewPanel() {
   const { panelId } = useParams();
   const navigate = useNavigate();
@@ -45,14 +47,25 @@ export default function ViewPanel() {
     dispatch(fetchUsers());
 
     if (criteriaList.length === 0) {
-      dispatch(fetchCriteria()); // ✅ load once
+      dispatch(fetchCriteria());
     }
   }, [dispatch, panelId, criteriaList.length]);
 
   /* =====================
-     Build lookups
+     ONLY HR / MANAGER CAN BE PANEL MEMBERS
   ===================== */
+  const eligiblePanelUsers = useMemo(() => {
+    return users.filter(
+      (u) =>
+        u.role === USER_ROLES.HR ||
+        u.role === USER_ROLES.MANAGER ||
+        u.role === USER_ROLES.PANEL
+    );
+  }, [users]);
 
+  /* =====================
+     Lookups
+  ===================== */
   const userMap = useMemo(() => {
     const map = {};
     users.forEach((u) => (map[u.id] = u));
@@ -76,7 +89,6 @@ export default function ViewPanel() {
   /* =====================
      Confirm handlers
   ===================== */
-
   const handleConfirmDelete = () => {
     if (!confirmState) return;
 
@@ -192,7 +204,7 @@ export default function ViewPanel() {
       </Card>
 
       {/* =====================
-          Panel Tasks (Criteria-aware)
+          Panel Tasks
       ===================== */}
       <Card>
         <h6>Panel Tasks</h6>
@@ -216,8 +228,7 @@ export default function ViewPanel() {
                     <div>
                       <div className="fw-semibold">
                         {criteriaField ? criteriaField.label : t.title}
-                        {" · "}
-                        Max: {t.max_score}
+                        {" · "}Max: {t.max_score}
                       </div>
 
                       {!t.is_required && (
@@ -254,11 +265,10 @@ export default function ViewPanel() {
       {/* =====================
           Modals
       ===================== */}
-
       {showAddMember && (
         <UpsertPanelMemberModal
           panelId={panelId}
-          users={users}
+          users={eligiblePanelUsers}
           onClose={() => setShowAddMember(false)}
         />
       )}
@@ -266,7 +276,7 @@ export default function ViewPanel() {
       {editMember && (
         <UpsertPanelMemberModal
           panelId={panelId}
-          users={users}
+          users={eligiblePanelUsers}
           member={editMember}
           onClose={() => setEditMember(null)}
         />

@@ -7,7 +7,7 @@ import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
 import AppButton from "../../components/common/AppButton";
 
-import { fetchMyAssignments } from "../../store/slices/reviewsSlice";
+import { fetchMyPanelAssignments } from "../../store/slices/panelAssignmentsSlice";
 
 export default function MyReviews() {
   const dispatch = useDispatch();
@@ -17,10 +17,10 @@ export default function MyReviews() {
     myAssignments = [],
     loading,
     error,
-  } = useSelector((state) => state.reviews);
+  } = useSelector((state) => state.panelAssignments);
 
   useEffect(() => {
-    dispatch(fetchMyAssignments());
+    dispatch(fetchMyPanelAssignments());
   }, [dispatch]);
 
   if (loading) return <Loading />;
@@ -60,7 +60,6 @@ export default function MyReviews() {
                     Nominee ID: {a.nomination.nominee_id}
                   </p>
 
-                  {/* Status */}
                   <p className="mb-1">
                     <strong>Status:</strong>{" "}
                     <span
@@ -72,7 +71,6 @@ export default function MyReviews() {
                     </span>
                   </p>
 
-                  {/* Progress */}
                   <p className="text-muted small mb-3">
                     Progress: {a.progress.completed} / {a.progress.total}
                   </p>

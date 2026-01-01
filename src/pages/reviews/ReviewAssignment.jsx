@@ -9,14 +9,16 @@ import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
 import AppButton from "../../components/common/AppButton";
 
-import { submitReview } from "../../store/slices/reviewsSlice";
+import { submitTaskReview } from "../../store/slices/panelAssignmentsSlice";
 
 export default function ReviewAssignment() {
   const { assignmentId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { myAssignments = [], loading } = useSelector((state) => state.reviews);
+  const { myAssignments = [], loading } = useSelector(
+    (state) => state.panelAssignments
+  );
 
   /* =====================
      Resolve assignment locally
@@ -44,16 +46,16 @@ export default function ReviewAssignment() {
      Submit single task
   ===================== */
   const handleSubmitTask = async (task) => {
-    if (!scores[task.task_id]) {
+    if (scores[task.task_id] === undefined) {
       toast.error("Score is required");
       return;
     }
 
     setSubmittingTaskId(task.task_id);
 
-    await dispatch(
-      submitReview({
-        panelAssignmentId: assignment.assignment_id,
+    const res = await dispatch(
+      submitTaskReview({
+        assignmentId: assignment.assignment_id,
         taskId: task.task_id,
         score: Number(scores[task.task_id]),
         comment: comments[task.task_id] || "",
@@ -61,7 +63,10 @@ export default function ReviewAssignment() {
     );
 
     setSubmittingTaskId(null);
-    toast.success("Review saved");
+
+    if (!res.error) {
+      toast.success("Review saved");
+    }
   };
 
   return (
@@ -99,10 +104,10 @@ export default function ReviewAssignment() {
                   max={task.max_score}
                   value={scores[task.task_id] ?? task.review?.score ?? ""}
                   onChange={(e) =>
-                    setScores({
-                      ...scores,
+                    setScores((prev) => ({
+                      ...prev,
                       [task.task_id]: e.target.value,
-                    })
+                    }))
                   }
                 />
               </Form.Group>
@@ -116,10 +121,10 @@ export default function ReviewAssignment() {
                   rows={2}
                   value={comments[task.task_id] ?? task.review?.comment ?? ""}
                   onChange={(e) =>
-                    setComments({
-                      ...comments,
+                    setComments((prev) => ({
+                      ...prev,
                       [task.task_id]: e.target.value,
-                    })
+                    }))
                   }
                 />
               </Form.Group>

@@ -8,6 +8,7 @@ import usersReducer from "./slices/usersSlice";
 import reviewsReducer from "./slices/reviewsSlice";
 import panelReducer from "./slices/panelSlice";
 import criteriaReducer from "./slices/criteriaSlice";
+import panelAssignmentsReducer from "./slices/panelAssignmentsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +21,6 @@ export const store = configureStore({
     reviews: reviewsReducer,
     panels: panelReducer,
     criteria: criteriaReducer,
+    panelAssignments: panelAssignmentsReducer,
   },
 });

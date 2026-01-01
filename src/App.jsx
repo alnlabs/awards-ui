@@ -24,7 +24,7 @@ import "./App.css";
 ===================== */
 import { Cycles, UpsertCycle, ViewCycle } from "./pages/cycles";
 import { Awards } from "./pages/awards";
-import { Users } from "./pages/users";
+import { UpsertUser, Users } from "./pages/users";
 
 /* =====================
    Criteria (HR)
@@ -336,6 +336,17 @@ function App() {
               <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
                 <DashboardLayout>
                   <Users />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/users/:userId/edit"
+            element={
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+                <DashboardLayout>
+                  <UpsertUser />
                 </DashboardLayout>
               </ProtectedRoute>
             }

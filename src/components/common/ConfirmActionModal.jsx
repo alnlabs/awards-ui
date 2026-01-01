@@ -11,7 +11,13 @@ export default function ConfirmActionModal({
   variant = "danger",
 }) {
   return (
-    <div className="modal-backdrop show d-flex align-items-center justify-content-center">
+    <div
+      className="d-flex align-items-center justify-content-center position-fixed top-0 start-0 w-100 h-100"
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.5)", // ✅ DARK BACKDROP
+        zIndex: 1050, // ✅ ABOVE PAGE CONTENT
+      }}
+    >
       <Card style={{ width: 420 }}>
         <h5 className="mb-2">{title}</h5>
         <p className="text-muted">{message}</p>
