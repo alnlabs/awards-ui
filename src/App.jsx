@@ -342,6 +342,17 @@ function App() {
           />
 
           <Route
+            path="/users/new"
+            element={
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+                <DashboardLayout>
+                  <Users />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/users/:userId/edit"
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
