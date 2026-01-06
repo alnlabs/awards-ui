@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { Table, Badge, Alert } from "react-bootstrap";
-import toast from "react-hot-toast";
+import { Table, Badge } from "react-bootstrap";
 
 import PageHeader from "../../components/common/PageHeader";
 import Card from "../../components/common/Card";
@@ -10,8 +9,6 @@ import Loading from "../../components/common/Loading";
 import AppButton from "../../components/common/AppButton";
 
 import { fetchNominationsWithScores } from "../../store/slices/awardsSlice";
-import { updateNominationStatus } from "../../store/slices/nominationsSlice";
-import { fetchCycleById } from "../../store/slices/cyclesSlice";
 
 export default function HRNominationSummary() {
   const { cycleId } = useParams();
@@ -21,25 +18,10 @@ export default function HRNominationSummary() {
   const { nominationsWithScores, loading, error } = useSelector(
     (state) => state.awards
   );
-  const { currentCycle } = useSelector((state) => state.cycles);
 
   useEffect(() => {
     dispatch(fetchNominationsWithScores(cycleId));
-    dispatch(fetchCycleById(cycleId));
   }, [dispatch, cycleId]);
-
-  const handleFinalize = async (nominationId) => {
-    try {
-      await dispatch(
-        updateNominationStatus({ id: nominationId, status: "FINALIZED" })
-      ).unwrap();
-      toast.success("Nomination finalized successfully");
-      // Refresh the list
-      dispatch(fetchNominationsWithScores(cycleId));
-    } catch (err) {
-      toast.error(err || "Failed to finalize nomination");
-    }
-  };
 
   if (loading) return <Loading />;
 
@@ -50,8 +32,6 @@ export default function HRNominationSummary() {
       </Card>
     );
   }
-
-  const canFinalize = currentCycle?.status === "CLOSED" || currentCycle?.status === "FINALIZED";
 
   return (
     <>
@@ -64,14 +44,6 @@ export default function HRNominationSummary() {
           </AppButton>
         }
       />
-
-      {currentCycle && !canFinalize && (
-        <Alert variant="info" className="mb-3">
-          <strong>Cycle Status: {currentCycle.status}</strong>
-          <br />
-          Nominations can only be finalized after the nomination window is closed (Cycle status: CLOSED).
-        </Alert>
-      )}
 
       <Card>
         <Table bordered hover responsive>
@@ -141,14 +113,9 @@ export default function HRNominationSummary() {
 
                     <AppButton
                       size="sm"
-                      disabled={n.status !== "HR_REVIEW" || !canFinalize}
-                      onClick={() => handleFinalize(n.nomination_id)}
-                      title={
-                        !canFinalize
-                          ? "Cycle must be CLOSED to finalize nominations"
-                          : n.status !== "HR_REVIEW"
-                          ? "Nomination must be in HR_REVIEW status"
-                          : "Finalize this nomination"
+                      disabled={n.status !== "HR_REVIEW"}
+                      onClick={() =>
+                        navigate(`/awards/new?nominationId=${n.nomination_id}`)
                       }
                     >
                       Finalize

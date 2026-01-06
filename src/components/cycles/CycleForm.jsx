@@ -1,10 +1,8 @@
 import { Form } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
 import styled from "styled-components";
 import AppButton from "../common/AppButton";
-import { fetchAwardTypes } from "../../store/slices/awardsSlice";
 
 /* =====================
    Styled Components
@@ -42,9 +40,6 @@ const CycleForm = ({
   submitLabel = "Save Cycle",
   onCancel,
 }) => {
-  const dispatch = useDispatch();
-  const { awardTypes = [] } = useSelector((state) => state.awards);
-  
   const {
     register,
     handleSubmit,
@@ -62,11 +57,6 @@ const CycleForm = ({
       reset(defaultValues);
     }
   }, [defaultValues, reset]);
-
-  // Fetch award types on mount
-  useEffect(() => {
-    dispatch(fetchAwardTypes());
-  }, [dispatch]);
 
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
@@ -115,26 +105,6 @@ const CycleForm = ({
             type="date"
             {...register("end_date", { required: true })}
           />
-        </FieldGroup>
-
-        <FieldGroup>
-          <Form.Label>Award Type</Form.Label>
-          <Form.Select
-            {...register("award_type_id")}
-            isInvalid={!!errors.award_type_id}
-          >
-            <option value="">Select award type (optional)</option>
-            {awardTypes
-              .filter((t) => t.is_active)
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-          </Form.Select>
-          <Form.Text className="text-muted">
-            Select the award type for this cycle (optional)
-          </Form.Text>
         </FieldGroup>
       </FormGrid>
 

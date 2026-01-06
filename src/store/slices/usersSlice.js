@@ -97,7 +97,6 @@ const usersSlice = createSlice({
   name: "users",
   initialState: {
     users: [],
-    total: 0,
     currentUser: null,
     loading: false,
     error: null,
@@ -120,14 +119,7 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
-        // Handle both old format (array) and new format (object with items)
-        if (Array.isArray(action.payload)) {
-          state.users = action.payload;
-          state.total = action.payload.length;
-        } else {
-          state.users = action.payload.items || [];
-          state.total = action.payload.total || 0;
-        }
+        state.users = action.payload;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
