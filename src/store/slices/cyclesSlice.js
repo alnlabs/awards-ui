@@ -117,13 +117,11 @@ const cyclesSlice = createSlice({
         const index = state.cycles.findIndex((c) => c.id === updated.id);
 
         if (index !== -1) {
-          // Merge update with existing cycle data
-          state.cycles[index] = { ...state.cycles[index], ...updated };
+          state.cycles[index] = updated;
         }
 
         if (state.currentCycle?.id === updated.id) {
-          // Merge update with current cycle data
-          state.currentCycle = { ...state.currentCycle, ...updated };
+          state.currentCycle = updated;
         }
       });
   },

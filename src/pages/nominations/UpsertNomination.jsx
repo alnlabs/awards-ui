@@ -34,47 +34,36 @@ const UpsertNomination = () => {
      LOAD ACTIVE CYCLE
   ===================== */
   useEffect(() => {
-    api
-      .get("/cycles")
-      .then((res) => {
-        // ✅ api service returns data directly, not res.data
-        const cycles = Array.isArray(res) ? res : [];
-        const active = cycles.find((c) => c.status === "OPEN");
-        if (!active) {
-          toast.error("No active cycle available");
-          navigate("/nominations");
-          return;
-        }
-
-        setCycle(active);
-        setValues((p) => ({ ...p, cycle_id: active.id }));
-      })
-      .catch(() => {
-        toast.error("Failed to load cycles");
+    api.get("/cycles").then((res) => {
+      const active = res.data.find((c) => c.status === "OPEN");
+      if (!active) {
+        toast.error("No active cycle available");
         navigate("/nominations");
-      });
+        return;
+      }
+
+      setCycle(active);
+      setValues((p) => ({ ...p, cycle_id: active.id }));
+    });
   }, [navigate]);
 
   /* =====================
-     LOAD EMPLOYEES
+     LOAD EMPLOYEES (PAGINATED)
   ===================== */
   useEffect(() => {
     api
       .get("/users", {
         params: {
           role: "EMPLOYEE",
-          skip: 0,
-          limit: 100, // backend max = 100
+          is_active: true,
+          page: 1,
+          page_size: 100, // backend max = 100
         },
       })
       .then((res) => {
-        // ✅ api service returns data directly (array), not res.data
-        const employees = Array.isArray(res) ? res : [];
-        setEmployees(employees);
+        setEmployees(res.data?.items || []);
       })
-      .catch(() => {
-        toast.error("Failed to load employees");
-      });
+      .catch(() => toast.error("Failed to load employees"));
   }, []);
 
   /* =====================
@@ -82,11 +71,8 @@ const UpsertNomination = () => {
   ===================== */
   useEffect(() => {
     api
-      .get("/forms/active")
-      .then((res) => {
-        // ✅ api service returns data directly, not res.data
-        setCriteria(res);
-      })
+      .get("/forms/active/render")
+      .then((res) => setCriteria(res.data))
       .catch(() => {
         toast.error("No active criteria configured");
         navigate("/nominations");
@@ -105,17 +91,16 @@ const UpsertNomination = () => {
     api
       .get(`/nominations/${id}`)
       .then((res) => {
-        // ✅ api service returns data directly, not res.data
-        if (res.status !== "DRAFT") {
+        if (res.data.status !== "DRAFT") {
           toast.error("Only draft nominations can be edited");
           navigate("/nominations");
           return;
         }
 
         setValues({
-          cycle_id: res.cycle_id,
-          nominee_id: res.nominee_id,
-          answers: res.answers || [],
+          cycle_id: res.data.cycle_id,
+          nominee_id: res.data.nominee_id,
+          answers: res.data.answers || [],
         });
       })
       .catch(() => {
@@ -145,69 +130,37 @@ const UpsertNomination = () => {
     });
   };
 
-  const getMissingRequiredFields = () => {
-    if (!criteria?.fields) return [];
-
-    return criteria.fields
-      .filter(
-        (f) =>
-          f.is_required &&
-          !values.answers.some(
-            (a) => a.field_key === f.field_key && a.value !== "" && a.value !== null
-          )
-      )
-      .map((f) => f.label || f.field_key);
-  };
-
   const hasMissingRequired = () => {
-    return getMissingRequiredFields().length > 0;
-  };
-
-  const isFieldMissing = (field_key) => {
     if (!criteria?.fields) return false;
-    const field = criteria.fields.find((f) => f.field_key === field_key);
-    if (!field || !field.is_required) return false;
 
-    const answer = values.answers.find((a) => a.field_key === field_key);
-    return !answer || answer.value === "" || answer.value === null;
+    return criteria.fields.some(
+      (f) =>
+        f.is_required &&
+        !values.answers.some(
+          (a) => a.field_key === f.field_key && a.value !== ""
+        )
+    );
   };
 
   /* =====================
      SUBMIT
   ===================== */
   const submit = async (status) => {
-    // Validate nominee
     if (!values.nominee_id) {
-      toast.error("Please select a nominee");
+      toast.error("Please select nominee");
       return;
     }
 
-    // Validate required fields for submission
-    if (status === "SUBMITTED") {
-      const missingFields = getMissingRequiredFields();
-      if (missingFields.length > 0) {
-        const fieldList = missingFields.join(", ");
-        toast.error(
-          `Please fill all required fields: ${fieldList}`,
-          { duration: 5000 }
-        );
-        return;
-      }
+    if (status === "SUBMITTED" && hasMissingRequired()) {
+      toast.error("Please fill all required criteria fields");
+      return;
     }
 
     setSubmitting(true);
 
     try {
-      // Get form_id from criteria
-      if (!criteria?.form_id) {
-        toast.error("Active criteria form not found");
-        setSubmitting(false);
-        return;
-      }
-
       await api.post("/nominations", {
         cycle_id: values.cycle_id,
-        form_id: criteria.form_id,
         nominee_id: values.nominee_id,
         answers: values.answers,
         status,
@@ -220,17 +173,6 @@ const UpsertNomination = () => {
       );
 
       navigate("/nominations");
-    } catch (error) {
-      // Handle backend validation errors
-      const errorMessage =
-        error?.error || error?.message || "Failed to submit nomination";
-      
-      // Check if it's a missing fields error
-      if (errorMessage.includes("Missing required fields")) {
-        toast.error(errorMessage, { duration: 6000 });
-      } else {
-        toast.error(errorMessage);
-      }
     } finally {
       setSubmitting(false);
     }
@@ -267,9 +209,7 @@ const UpsertNomination = () => {
                 Nominee <span className="text-danger">*</span>
               </label>
               <select
-                className={
-                  !values.nominee_id ? "form-select is-invalid" : "form-select"
-                }
+                className="form-select"
                 value={values.nominee_id}
                 onChange={(e) =>
                   setValues({ ...values, nominee_id: e.target.value })
@@ -278,15 +218,10 @@ const UpsertNomination = () => {
                 <option value="">Select employee</option>
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.name} ({emp.role})
+                    {emp.name}
                   </option>
                 ))}
               </select>
-              {!values.nominee_id && (
-                <div className="invalid-feedback">
-                  Please select a nominee
-                </div>
-              )}
             </div>
 
             <hr />
@@ -299,13 +234,6 @@ const UpsertNomination = () => {
             {criteria.fields.map((field) => {
               const type = field.field_type?.toUpperCase();
               const value = getAnswerValue(field.field_key);
-              const isMissing = isFieldMissing(field.field_key);
-              const inputClass = isMissing
-                ? "form-control is-invalid"
-                : "form-control";
-              const selectClass = isMissing
-                ? "form-select is-invalid"
-                : "form-select";
 
               return (
                 <div key={field.field_key} className="col-12">
@@ -318,111 +246,76 @@ const UpsertNomination = () => {
 
                   {/* TEXT */}
                   {type === "TEXT" && (
-                    <>
-                      <input
-                        className={inputClass}
-                        value={value}
-                        onChange={(e) =>
-                          handleAnswerChange(field.field_key, e.target.value)
-                        }
-                      />
-                      {isMissing && (
-                        <div className="invalid-feedback">
-                          This field is required
-                        </div>
-                      )}
-                    </>
+                    <input
+                      className="form-control"
+                      value={value}
+                      onChange={(e) =>
+                        handleAnswerChange(field.field_key, e.target.value)
+                      }
+                    />
                   )}
 
                   {/* TEXTAREA */}
                   {type === "TEXTAREA" && (
-                    <>
-                      <textarea
-                        className={inputClass}
-                        rows={3}
-                        value={value}
-                        onChange={(e) =>
-                          handleAnswerChange(field.field_key, e.target.value)
-                        }
-                      />
-                      {isMissing && (
-                        <div className="invalid-feedback">
-                          This field is required
-                        </div>
-                      )}
-                    </>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={value}
+                      onChange={(e) =>
+                        handleAnswerChange(field.field_key, e.target.value)
+                      }
+                    />
                   )}
 
                   {/* NUMBER */}
                   {type === "NUMBER" && (
-                    <>
-                      <input
-                        type="number"
-                        className={inputClass}
-                        value={value}
-                        onChange={(e) =>
-                          handleAnswerChange(field.field_key, e.target.value)
-                        }
-                      />
-                      {isMissing && (
-                        <div className="invalid-feedback">
-                          This field is required
-                        </div>
-                      )}
-                    </>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={value}
+                      onChange={(e) =>
+                        handleAnswerChange(field.field_key, e.target.value)
+                      }
+                    />
                   )}
 
                   {/* ✅ SELECT (FIXED) */}
                   {type === "SELECT" && (
-                    <>
-                      <select
-                        className={selectClass}
-                        value={value}
-                        onChange={(e) =>
-                          handleAnswerChange(field.field_key, e.target.value)
-                        }
-                      >
-                        <option value="">Select</option>
+                    <select
+                      className="form-select"
+                      value={value}
+                      onChange={(e) =>
+                        handleAnswerChange(field.field_key, e.target.value)
+                      }
+                    >
+                      <option value="">Select</option>
 
-                        {field.options &&
-                          typeof field.options === "object" &&
-                          Object.entries(field.options).map(([key, label]) => (
-                            <option key={key} value={key}>
-                              {label}
-                            </option>
-                          ))}
-                      </select>
-                      {isMissing && (
-                        <div className="invalid-feedback">
-                          This field is required
-                        </div>
-                      )}
-                    </>
+                      {field.options &&
+                        typeof field.options === "object" &&
+                        Object.entries(field.options).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                    </select>
                   )}
 
                   {/* RATING */}
                   {type === "RATING" && (
-                    <>
-                      <select
-                        className={selectClass}
-                        value={value}
-                        onChange={(e) =>
-                          handleAnswerChange(field.field_key, e.target.value)
-                        }
-                      >
-                        <option value="">Rate</option>
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                      {isMissing && (
-                        <div className="invalid-feedback">
-                          This field is required
-                        </div>
-                      )}
-                    </>
+                    <select
+                      className="form-select"
+                      value={value}
+                      onChange={(e) =>
+                        handleAnswerChange(field.field_key, e.target.value)
+                      }
+                    >
+                      <option value="">Rate</option>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </div>
               );

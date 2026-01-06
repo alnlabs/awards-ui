@@ -11,12 +11,8 @@ export const authService = {
   /* =====================
      Login
   ===================== */
-  login: async (email, password, role) => {
-    const payload = { email, password };
-    if (role) {
-      payload.role = role;
-    }
-    const data = await api.post("/auth/login", payload);
+  login: async (email, password) => {
+    const data = await api.post("/auth/login", { email, password });
 
     // data = { access_token, user }
     if (data?.access_token) {

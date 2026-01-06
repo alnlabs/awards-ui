@@ -2,103 +2,79 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Modal, Badge } from "react-bootstrap";
 import toast from "react-hot-toast";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { BiEdit } from "react-icons/bi";
 
 import PageHeader from "../../components/common/PageHeader";
 import { Card, CardBody } from "../../components/common/Card";
 import AppButton from "../../components/common/AppButton";
 import Loading from "../../components/common/Loading";
+import api from "../../services/api";
 import { USER_ROLES } from "../../utils/constants";
-import {
-  fetchCycleById,
-  updateCycle,
-  clearError,
-} from "../../store/slices/cyclesSlice";
 
 const ViewCycle = () => {
+  // ✅ CORRECT PARAM NAME
   const { cycleId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
   const { user } = useSelector((state) => state.auth);
-  const { currentCycle, loading, error } = useSelector((state) => state.cycles);
+
+  const [cycle, setCycle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [pendingStatus, setPendingStatus] = useState(null); // OPEN | CLOSED
   const [updating, setUpdating] = useState(false);
-  const [showEarlyClosureModal, setShowEarlyClosureModal] = useState(false);
-  const [dropCycle, setDropCycle] = useState(false);
 
   /* =====================
      Fetch cycle
   ===================== */
   useEffect(() => {
-    if (!cycleId) return;
+    if (!cycleId) {
+      setError("Invalid cycle id");
+      setLoading(false);
+      return;
+    }
 
-    dispatch(fetchCycleById(cycleId));
+    let mounted = true;
 
-    return () => {
-      dispatch(clearError());
+    const loadCycle = async () => {
+      try {
+        // ✅ api returns BUSINESS DATA directly
+        const data = await api.get(`/cycles/${cycleId}`);
+        if (mounted) setCycle(data);
+      } catch {
+        if (mounted) {
+          setError("Failed to load award cycle");
+          toast.error("Failed to load cycle");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
-  }, [dispatch, cycleId]);
+
+    loadCycle();
+    return () => {
+      mounted = false;
+    };
+  }, [cycleId]);
 
   /* =====================
      Update Status
   ===================== */
-  const handleUpdateStatus = async (shouldDrop = false) => {
-    if (!pendingStatus || !currentCycle) return;
+  const updateStatus = async () => {
+    if (!pendingStatus || !cycle) return;
 
     setUpdating(true);
     try {
-      await dispatch(
-        updateCycle({
-          id: currentCycle.id,
-          data: { 
-            status: pendingStatus,
-            drop_cycle: shouldDrop,
-          },
-        })
-      ).unwrap();
+      await api.patch(`/cycles/${cycle.id}/status`, {
+        status: pendingStatus,
+      });
 
-      const action = shouldDrop ? "dropped" : pendingStatus.toLowerCase();
-      toast.success(`Cycle ${action} successfully`);
+      toast.success(`Cycle ${pendingStatus.toLowerCase()} successfully`);
+      setCycle((prev) => ({ ...prev, status: pendingStatus }));
       setPendingStatus(null);
-      setShowEarlyClosureModal(false);
-      setDropCycle(false);
-      
-      // Refresh cycle data
-      dispatch(fetchCycleById(cycleId));
-    } catch (err) {
-      toast.error(err || "Failed to update cycle status");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleEarlyClosureChoice = async (drop) => {
-    setShowEarlyClosureModal(false);
-    setUpdating(true);
-    
-    try {
-      await dispatch(
-        updateCycle({
-          id: currentCycle.id,
-          data: { 
-            status: "CLOSED",
-            drop_cycle: drop,
-          },
-        })
-      ).unwrap();
-
-      const action = drop ? "dropped" : "closed";
-      toast.success(`Cycle ${action} successfully`);
-      setPendingStatus(null);
-      setDropCycle(false);
-      
-      // Refresh cycle data
-      dispatch(fetchCycleById(cycleId));
-    } catch (err) {
-      toast.error(err || "Failed to update cycle status");
+    } catch {
+      toast.error("Failed to update cycle status");
     } finally {
       setUpdating(false);
     }
@@ -115,7 +91,7 @@ const ViewCycle = () => {
         <CardBody className="text-center">
           <h5 className="mb-2">{error}</h5>
           <p className="text-muted">
-            The award cycle may not exist or you don't have access.
+            The award cycle may not exist or you don’t have access.
           </p>
           <AppButton onClick={() => navigate("/cycles")}>
             Back to Cycles
@@ -125,7 +101,7 @@ const ViewCycle = () => {
     );
   }
 
-  if (!currentCycle) {
+  if (!cycle) {
     return (
       <Card>
         <CardBody className="text-center">
@@ -137,8 +113,6 @@ const ViewCycle = () => {
       </Card>
     );
   }
-
-  const cycle = currentCycle;
 
   /* =====================
      UI
@@ -175,21 +149,7 @@ const ViewCycle = () => {
             {user?.role === USER_ROLES.HR && cycle.status === "OPEN" && (
               <AppButton
                 variant="danger"
-                onClick={() => {
-                  // Check if closing before end_date
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const endDate = new Date(cycle.end_date);
-                  endDate.setHours(0, 0, 0, 0);
-                  
-                  if (today < endDate) {
-                    // Early closure - show two-option modal
-                    setShowEarlyClosureModal(true);
-                  } else {
-                    // Normal closure
-                    setPendingStatus("CLOSED");
-                  }
-                }}
+                onClick={() => setPendingStatus("CLOSED")}
               >
                 Close Cycle
               </AppButton>
@@ -228,76 +188,10 @@ const ViewCycle = () => {
       </Card>
 
       {/* =====================
-         Early Closure Confirmation Modal (Two Options)
+         Confirmation Modal
       ===================== */}
       <Modal
-        show={showEarlyClosureModal}
-        onHide={() => !updating && setShowEarlyClosureModal(false)}
-        backdrop="static"
-        centered
-      >
-        <Modal.Header closeButton={!updating}>
-          <Modal.Title>Early Cycle Closure</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <p className="text-warning mb-3">
-            <strong>Warning:</strong> You are closing this cycle before the scheduled end date.
-          </p>
-          <p>Please choose how to proceed:</p>
-          
-          <div className="mb-3">
-            <h6>Option 1: End Cycle</h6>
-            <ul>
-              <li>Close the cycle normally</li>
-              <li>Keep all nominations and awards</li>
-              <li>Continue with review process</li>
-            </ul>
-          </div>
-          
-          <div className="mb-3">
-            <h6>Option 2: Drop Cycle</h6>
-            <ul>
-              <li>Close the cycle and <strong className="text-danger">delete all data</strong></li>
-              <li>Remove all nominations</li>
-              <li>Remove all awards</li>
-              <li><strong className="text-danger">This action cannot be undone</strong></li>
-            </ul>
-          </div>
-        </Modal.Body>
-
-        <Modal.Footer>
-          <AppButton
-            variant="outline-secondary"
-            disabled={updating}
-            onClick={() => setShowEarlyClosureModal(false)}
-          >
-            Cancel
-          </AppButton>
-
-          <AppButton
-            variant="danger"
-            disabled={updating}
-            onClick={() => handleEarlyClosureChoice(true)}
-          >
-            Drop Cycle
-          </AppButton>
-
-          <AppButton
-            variant="primary"
-            disabled={updating}
-            onClick={() => handleEarlyClosureChoice(false)}
-          >
-            End Cycle
-          </AppButton>
-        </Modal.Footer>
-      </Modal>
-
-      {/* =====================
-         Normal Confirmation Modal
-      ===================== */}
-      <Modal
-        show={!!pendingStatus && !showEarlyClosureModal}
+        show={!!pendingStatus}
         onHide={() => !updating && setPendingStatus(null)}
         backdrop="static"
         centered
@@ -349,7 +243,7 @@ const ViewCycle = () => {
           <AppButton
             variant={pendingStatus === "OPEN" ? "success" : "danger"}
             loading={updating}
-            onClick={() => handleUpdateStatus(false)}
+            onClick={updateStatus}
           >
             Yes, {pendingStatus === "OPEN" ? "Open" : "Close"} Cycle
           </AppButton>
