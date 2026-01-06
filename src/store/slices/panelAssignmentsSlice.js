@@ -37,6 +37,20 @@ export const fetchAssignmentsForNomination = createAsyncThunk(
 );
 
 /**
+ * HR → Fetch all panel assignments
+ */
+export const fetchAllPanelAssignments = createAsyncThunk(
+  "panelAssignments/fetchAllPanelAssignments",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await api.get("/panel-assignments/all"); // ✅ ARRAY
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to fetch all assignments");
+    }
+  }
+);
+
+/**
  * PANEL → Fetch my assignments
  */
 export const fetchMyPanelAssignments = createAsyncThunk(
@@ -77,6 +91,7 @@ const panelAssignmentsSlice = createSlice({
     myAssignments: [],
 
     // HR view
+    allAssignments: [], // All assignments for HR
     assignmentsByNomination: {},
 
     assigning: false,
@@ -105,6 +120,19 @@ const panelAssignmentsSlice = createSlice({
       })
       .addCase(assignPanelsToNomination.rejected, (state, action) => {
         state.assigning = false;
+        state.error = action.payload;
+      })
+
+      /* ================= HR → All Assignments ================= */
+      .addCase(fetchAllPanelAssignments.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchAllPanelAssignments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allAssignments = action.payload;
+      })
+      .addCase(fetchAllPanelAssignments.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       })
 
