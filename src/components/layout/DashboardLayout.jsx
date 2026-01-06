@@ -40,6 +40,11 @@ const StyledNavbar = styled(Navbar)`
     display: flex;
     align-items: center;
   }
+
+  .navbar-nav {
+    display: flex;
+    align-items: center;
+  }
 `;
 
 const Sidebar = styled.aside`
@@ -119,6 +124,128 @@ const Overlay = styled.div`
   }
 `;
 
+const ProfileImage = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+`;
+
+const ProfileIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+
+  svg {
+    color: white;
+    font-size: 1.2rem;
+  }
+`;
+
+const ProfileDropdownToggle = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: white;
+  cursor: pointer;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+  height: 100%;
+  min-height: 40px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .user-name {
+    font-weight: 500;
+    margin-right: 0;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+  }
+`;
+
+const StyledNavDropdown = styled(NavDropdown)`
+  display: flex;
+  align-items: center;
+  height: 100%;
+
+  .dropdown-toggle {
+    color: white !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    gap: 0 !important;
+    line-height: 1 !important;
+
+    &::after {
+      color: white;
+      margin-left: 0.5rem;
+      margin-right: 0;
+      vertical-align: middle;
+      align-self: center;
+    }
+
+    &:hover,
+    &:focus,
+    &:active {
+      background: rgba(255, 255, 255, 0.15) !important;
+      color: white !important;
+    }
+  }
+
+  .dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #dee2e6;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0;
+
+    .dropdown-item {
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f8f9fa;
+        color: #495057;
+      }
+
+      &:active {
+        background: #e9ecef;
+      }
+
+      svg {
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+      }
+    }
+
+    .dropdown-divider {
+      margin: 0.5rem 0;
+    }
+  }
+`;
+
 /* =====================
    Layout Component
 ===================== */
@@ -130,6 +257,19 @@ const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+
+  const getImageUrl = () => {
+    if (!user?.profile_image) return null;
+    let baseUrl = "http://localhost:4100";
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4100/api/v1";
+      const url = new URL(apiUrl);
+      baseUrl = `${url.protocol}//${url.host}`;
+    } catch (e) {
+      // Use default
+    }
+    return `${baseUrl}${user.profile_image}`;
+  };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -165,10 +305,11 @@ const DashboardLayout = ({ children }) => {
       roles: [USER_ROLES.HR],
     },
     {
-      path: "/reviews", // ✅ FIXED
+      path: "/reviews",
       label: "My Assignments",
       icon: BiTask,
       roles: [USER_ROLES.PANEL],
+      checkPanelMember: true, // Also show if user is a panel member (sub-role)
     },
     {
       path: "/nominations",
@@ -196,9 +337,17 @@ const DashboardLayout = ({ children }) => {
     },
   ];
 
-  const visibleMenuItems = menuItems.filter((item) =>
-    item.roles.includes(user?.role)
-  );
+  const visibleMenuItems = menuItems.filter((item) => {
+    // Check main role
+    if (item.roles.includes(user?.role)) {
+      return true;
+    }
+    // Check if item requires panel membership and user is a panel member
+    if (item.checkPanelMember && user?.is_panel_member) {
+      return true;
+    }
+    return false;
+  });
 
   /* =====================
      Render
@@ -214,21 +363,40 @@ const DashboardLayout = ({ children }) => {
           </Navbar.Brand>
 
           <div className="d-flex align-items-center gap-3">
-            <NavDropdown
-              title={user?.name || "User"}
+            <StyledNavDropdown
+              title={
+                <ProfileDropdownToggle>
+                  {getImageUrl() ? (
+                    <ProfileImage
+                      src={getImageUrl()}
+                      alt={user?.name || "User"}
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        const icon = e.target.nextElementSibling;
+                        if (icon) icon.style.display = "flex";
+                      }}
+                    />
+                  ) : (
+                    <ProfileIcon>
+                      <BiUser />
+                    </ProfileIcon>
+                  )}
+                  <span className="user-name">{user?.name || "User"}</span>
+                </ProfileDropdownToggle>
+              }
               align="end"
               menuVariant="light"
             >
               <NavDropdown.Item onClick={() => navigate("/profile")}>
-                <BiUser className="me-2" />
+                <BiUser />
                 Profile
               </NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item onClick={handleLogout}>
-                <BiLogOut className="me-2" />
+                <BiLogOut />
                 Logout
               </NavDropdown.Item>
-            </NavDropdown>
+            </StyledNavDropdown>
 
             <BiMenu
               style={{

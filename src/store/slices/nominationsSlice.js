@@ -68,7 +68,8 @@ export const updateNominationStatus = createAsyncThunk(
   "nominations/updateStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      return await api.patch(`/nominations/${id}/status`, { status }); // ✅ OBJECT
+      // Status is sent as query parameter
+      return await api.patch(`/nominations/${id}/status?status=${status}`);
     } catch (error) {
       return rejectWithValue(
         error?.error || "Failed to update nomination status"
@@ -90,6 +91,36 @@ export const submitPanelReview = createAsyncThunk(
       }); // ✅ OBJECT
     } catch (error) {
       return rejectWithValue(error?.error || "Failed to submit review");
+    }
+  }
+);
+
+/* =========================
+   DELETE NOMINATION
+========================= */
+export const deleteNomination = createAsyncThunk(
+  "nominations/deleteNomination",
+  async (id, { rejectWithValue }) => {
+    try {
+      return await api.delete(`/nominations/${id}`);
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to delete nomination");
+    }
+  }
+);
+
+/* =========================
+   DELETE ALL NOMINATIONS FOR CYCLE
+========================= */
+export const deleteAllNominationsForCycle = createAsyncThunk(
+  "nominations/deleteAllForCycle",
+  async (cycleId, { rejectWithValue }) => {
+    try {
+      return await api.delete(`/nominations/cycle/${cycleId}/all`);
+    } catch (error) {
+      return rejectWithValue(
+        error?.error || "Failed to delete nominations"
+      );
     }
   }
 );
@@ -161,6 +192,24 @@ const nominationsSlice = createSlice({
         if (state.currentNomination?.id === action.payload.id) {
           state.currentNomination = action.payload;
         }
+      })
+
+      /* ---------- DELETE NOMINATION ---------- */
+      .addCase(deleteNomination.fulfilled, (state, action) => {
+        const deletedId = action.payload.id;
+        state.nominations = state.nominations.filter(
+          (n) => n.id !== deletedId
+        );
+        state.history = state.history.filter((n) => n.id !== deletedId);
+        if (state.currentNomination?.id === deletedId) {
+          state.currentNomination = null;
+        }
+      })
+
+      /* ---------- DELETE ALL FOR CYCLE ---------- */
+      .addCase(deleteAllNominationsForCycle.fulfilled, (state, action) => {
+        // Refresh nominations list - will be refetched
+        state.nominations = [];
       });
   },
 });

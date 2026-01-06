@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   start_date: "",
   end_date: "",
   description: "",
+  award_type_id: "",
 };
 
 const UpsertCycle = () => {
@@ -70,14 +71,20 @@ const UpsertCycle = () => {
       return;
     }
 
+    // Convert empty string to null for award_type_id
+    const submitData = {
+      ...data,
+      award_type_id: data.award_type_id || null,
+    };
+
     setSubmitting(true);
 
     try {
       if (isEdit) {
-        await api.patch(`/cycles/${cycleId}`, data); // ✅ FIXED
+        await api.patch(`/cycles/${cycleId}`, submitData); // ✅ FIXED
         toast.success("Cycle updated successfully");
       } else {
-        await api.post("/cycles", data);
+        await api.post("/cycles", submitData);
         toast.success("Cycle created successfully");
       }
 
