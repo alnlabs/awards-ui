@@ -8,7 +8,7 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { BiPlus, BiUser, BiEdit, BiTrash } from "react-icons/bi";
+import { BiPlus, BiUser, BiEdit, BiTrash, BiSearch, BiSort } from "react-icons/bi";
 
 import { fetchUsers, bulkDeleteUsers } from "../../store/slices/usersSlice";
 import { USER_ROLES } from "../../utils/constants";
@@ -36,6 +36,44 @@ const TableWrapper = styled.div`
   position: relative;
 `;
 
+const SearchContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+
+  .search-input {
+    flex: 1;
+    max-width: 400px;
+  }
+`;
+
+const SortableHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    color: #667eea;
+  }
+
+  svg {
+    font-size: 0.875rem;
+    opacity: 0.6;
+  }
+
+  &.sorted {
+    color: #667eea;
+    font-weight: 600;
+
+    svg {
+      opacity: 1;
+    }
+  }
+`;
+
 /* =====================
    Component
 ===================== */
@@ -44,7 +82,7 @@ const Users = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { users = [], loading } = useSelector((state) => state.users);
+  const { users = [], total = 0, loading } = useSelector((state) => state.users);
 
   /* =====================
      Pagination
@@ -55,16 +93,44 @@ const Users = () => {
   // ✅ NEW: track first load
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
+  /* =====================
+     Search & Sorting
+  ===================== */
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   useEffect(() => {
-    dispatch(
-      fetchUsers({
-        skip: (page - 1) * pageSize,
-        limit: pageSize,
-      })
-    ).finally(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset to first page on search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const params = {
+      skip: (page - 1) * pageSize,
+      limit: pageSize,
+    };
+
+    if (debouncedSearch.trim()) {
+      params.search = debouncedSearch.trim();
+    }
+
+    if (sortBy) {
+      params.sort_by = sortBy;
+      params.sort_order = sortOrder;
+    }
+
+    dispatch(fetchUsers(params)).finally(() => {
       setHasLoadedOnce(true);
     });
-  }, [dispatch, page]);
+  }, [dispatch, page, debouncedSearch, sortBy, sortOrder]);
 
   /* =====================
      Role badge
@@ -98,24 +164,96 @@ const Users = () => {
             onChange={row.getToggleSelectedHandler()}
           />
         ),
+        enableSorting: false,
       },
-      { accessorKey: "name", header: "Name" },
-      { accessorKey: "email", header: "Email" },
+      {
+        accessorKey: "name",
+        header: () => (
+          <SortableHeader
+            onClick={() => handleSort("name")}
+            className={sortBy === "name" ? "sorted" : ""}
+          >
+            Name
+            <BiSort />
+            {sortBy === "name" && (
+              <span style={{ fontSize: "0.75rem", marginLeft: "0.25rem" }}>
+                {sortOrder === "asc" ? "↑" : "↓"}
+              </span>
+            )}
+          </SortableHeader>
+        ),
+      },
+      {
+        accessorKey: "email",
+        header: () => (
+          <SortableHeader
+            onClick={() => handleSort("email")}
+            className={sortBy === "email" ? "sorted" : ""}
+          >
+            Email
+            <BiSort />
+            {sortBy === "email" && (
+              <span style={{ fontSize: "0.75rem", marginLeft: "0.25rem" }}>
+                {sortOrder === "asc" ? "↑" : "↓"}
+              </span>
+            )}
+          </SortableHeader>
+        ),
+      },
       {
         accessorKey: "employee_code",
-        header: "Employee Code",
+        header: () => (
+          <SortableHeader
+            onClick={() => handleSort("employee_code")}
+            className={sortBy === "employee_code" ? "sorted" : ""}
+          >
+            Employee Code
+            <BiSort />
+            {sortBy === "employee_code" && (
+              <span style={{ fontSize: "0.75rem", marginLeft: "0.25rem" }}>
+                {sortOrder === "asc" ? "↑" : "↓"}
+              </span>
+            )}
+          </SortableHeader>
+        ),
         cell: ({ getValue }) => getValue() || "-",
       },
       {
         accessorKey: "role",
-        header: "Role",
+        header: () => (
+          <SortableHeader
+            onClick={() => handleSort("role")}
+            className={sortBy === "role" ? "sorted" : ""}
+          >
+            Role
+            <BiSort />
+            {sortBy === "role" && (
+              <span style={{ fontSize: "0.75rem", marginLeft: "0.25rem" }}>
+                {sortOrder === "asc" ? "↑" : "↓"}
+              </span>
+            )}
+          </SortableHeader>
+        ),
         cell: ({ getValue }) => (
           <RoleBadge bg={getRoleVariant(getValue())}>{getValue()}</RoleBadge>
         ),
       },
       {
         accessorKey: "is_active",
-        header: "Status",
+        header: () => (
+          <SortableHeader
+            onClick={() => handleSort("is_active")}
+            className={sortBy === "is_active" ? "sorted" : ""}
+          >
+            Status
+            <BiSort />
+            {sortBy === "is_active" && (
+              <span style={{ fontSize: "0.75rem", marginLeft: "0.25rem" }}>
+                {sortOrder === "asc" ? "↑" : "↓"}
+              </span>
+            )}
+          </SortableHeader>
+        ),
         cell: ({ getValue }) => (
           <Badge bg={getValue() ? "success" : "secondary"}>
             {getValue() ? "Active" : "Inactive"}
@@ -133,10 +271,26 @@ const Users = () => {
             onClick={() => navigate(`/users/${row.original.id}/edit`)}
           />
         ),
+        enableSorting: false,
       },
     ],
     [navigate]
   );
+
+  /* =====================
+     Handle Column Sorting
+  ===================== */
+  const handleSort = (columnId) => {
+    if (sortBy === columnId) {
+      // Toggle sort order
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // New column, default to ascending
+      setSortBy(columnId);
+      setSortOrder("asc");
+    }
+    setPage(1); // Reset to first page on sort change
+  };
 
   /* =====================
      React Table
@@ -157,19 +311,29 @@ const Users = () => {
     await dispatch(bulkDeleteUsers(ids));
     table.resetRowSelection();
 
-    dispatch(
-      fetchUsers({
-        skip: (page - 1) * pageSize,
-        limit: pageSize,
-      })
-    );
+    // Refetch with current filters
+    const params = {
+      skip: (page - 1) * pageSize,
+      limit: pageSize,
+    };
+
+    if (debouncedSearch.trim()) {
+      params.search = debouncedSearch.trim();
+    }
+
+    if (sortBy) {
+      params.sort_by = sortBy;
+      params.sort_order = sortOrder;
+    }
+
+    dispatch(fetchUsers(params));
   };
 
   // ✅ Only block UI on first load
   if (loading && !hasLoadedOnce) return <Loading />;
 
   const selectedCount = table.getSelectedRowModel().rows.length;
-  const total = users.length;
+  const showingCount = users.length;
 
   return (
     <>
@@ -197,10 +361,36 @@ const Users = () => {
 
       <StyledCard>
         <CardHeader>
-          <CardTitle>Users ({total})</CardTitle>
+          <CardTitle>
+            Users ({total})
+            {searchQuery && ` - Showing ${showingCount} result${showingCount !== 1 ? "s" : ""}`}
+          </CardTitle>
         </CardHeader>
 
         <CardBody>
+          <SearchContainer>
+            <div className="input-group search-input">
+              <span className="input-group-text">
+                <BiSearch />
+              </span>
+              <Form.Control
+                type="text"
+                placeholder="Search by name, email, employee code, or role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {searchQuery && (
+              <AppButton
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear
+              </AppButton>
+            )}
+          </SearchContainer>
+
           <TableWrapper>
             {/* ✅ Optional overlay spinner (no flash) */}
             {loading && hasLoadedOnce && (
@@ -245,23 +435,29 @@ const Users = () => {
           </TableWrapper>
 
           {/* Pagination */}
-          <div className="d-flex justify-content-between mt-3">
-            <span>Page {page}</span>
-            <div className="d-flex gap-2">
-              <AppButton
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Prev
-              </AppButton>
-              <AppButton
-                size="sm"
-                disabled={users.length < pageSize}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </AppButton>
+          <div className="d-flex justify-content-between align-items-center mt-3">
+            <span>
+              Showing {showingCount} of {total} users
+              {debouncedSearch && ` (filtered)`}
+            </span>
+            <div className="d-flex gap-2 align-items-center">
+              <span>Page {page} of {Math.ceil(total / pageSize) || 1}</span>
+              <div className="d-flex gap-2">
+                <AppButton
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Prev
+                </AppButton>
+                <AppButton
+                  size="sm"
+                  disabled={page * pageSize >= total}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </AppButton>
+              </div>
             </div>
           </div>
         </CardBody>

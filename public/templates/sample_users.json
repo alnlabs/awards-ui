@@ -1,0 +1,632 @@
+[
+  {
+    "name": "Ravi Teja Reddy",
+    "email": "ravi.reddy@fintinc.com",
+    "employee_code": "EMP1001",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Ravi"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Hyderabad"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Junior Developer"
+      }
+    ]
+  },
+  {
+    "name": "Lakshmi Priya Konidela",
+    "email": "lakshmi.konidela@fintinc.com",
+    "employee_code": "EMP1002",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Gongura Pachadi"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Anitha"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Teacher"
+      }
+    ]
+  },
+  {
+    "name": "Sandeep Kumar Bhupathi",
+    "email": "sandeep.bhupathi@fintinc.com",
+    "employee_code": "EMP1003",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Sandy"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Vijayawada"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Support Engineer"
+      }
+    ]
+  },
+  {
+    "name": "Swapna Chavali",
+    "email": "swapna.chavali@fintinc.com",
+    "employee_code": "EMP1004",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Pesarattu"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mr. Srinivas"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Singer"
+      }
+    ]
+  },
+  {
+    "name": "Venkata Sai Charan",
+    "email": "sai.charan@fintinc.com",
+    "employee_code": "EMP1005",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Charan"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Tirupati"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Intern Tester"
+      }
+    ]
+  },
+  {
+    "name": "Harika Yarlagadda",
+    "email": "harika.yarlagadda@fintinc.com",
+    "employee_code": "EMP1006",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Sambar Rice"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Padma"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Doctor"
+      }
+    ]
+  },
+  {
+    "name": "Kiran Kumar Gollapudi",
+    "email": "kiran.gollapudi@fintinc.com",
+    "employee_code": "EMP1007",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Kiru"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Vizag Beach"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Process Associate"
+      }
+    ]
+  },
+  {
+    "name": "Anusha Pasupula",
+    "email": "anusha.pasupula@fintinc.com",
+    "employee_code": "EMP1008",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Curd Rice"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mr. Ramesh"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Fashion Designer"
+      }
+    ]
+  },
+  {
+    "name": "Mahesh Chowdary",
+    "email": "mahesh.chowdary@fintinc.com",
+    "employee_code": "EMP1009",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Mahi"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Srisailam"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Network Engineer"
+      }
+    ]
+  },
+  {
+    "name": "Deepthi Nandamuri",
+    "email": "deepthi.nandamuri@fintinc.com",
+    "employee_code": "EMP1010",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Pulihora"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Lakshmi"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Artist"
+      }
+    ]
+  },
+  {
+    "name": "Naveen Polisetty",
+    "email": "naveen.polisetty@fintinc.com",
+    "employee_code": "EMP1011",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Navi"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Warangal"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Technical Support"
+      }
+    ]
+  },
+  {
+    "name": "Sirisha Peddireddy",
+    "email": "sirisha.peddireddy@fintinc.com",
+    "employee_code": "EMP1012",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Lemon Rice"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mr. Kumar"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Journalist"
+      }
+    ]
+  },
+  {
+    "name": "Raghavendra Kolli",
+    "email": "raghavendra.kolli@fintinc.com",
+    "employee_code": "EMP1013",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Raghu"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Kurnool"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "QA Engineer"
+      }
+    ]
+  },
+  {
+    "name": "Bhavana Adusumalli",
+    "email": "bhavana.adusumalli@fintinc.com",
+    "employee_code": "EMP1014",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Veg Biryani"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Jyothi"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Dancer"
+      }
+    ]
+  },
+  {
+    "name": "Vamshi Krishna Moturu",
+    "email": "vamshi.moturu@fintinc.com",
+    "employee_code": "EMP1015",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Vamshi"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Karimnagar"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Backend Intern"
+      }
+    ]
+  },
+  {
+    "name": "Madhuri Gadde",
+    "email": "madhuri.gadde@fintinc.com",
+    "employee_code": "EMP1016",
+    "role": "EMPLOYEE",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Tomato Pappu"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Uma"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Civil Engineer"
+      }
+    ]
+  },
+  {
+    "name": "Srinivas Guduru",
+    "email": "srinivas.guduru@fintinc.com",
+    "employee_code": "MGR2001",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Srini"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Rajahmundry"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Software Engineer"
+      }
+    ]
+  },
+  {
+    "name": "Padmaja Malladi",
+    "email": "padmaja.malladi@fintinc.com",
+    "employee_code": "MGR2002",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Upma"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Saroja"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Professor"
+      }
+    ]
+  },
+  {
+    "name": "Harsha Vardhan Pusapati",
+    "email": "harsha.pusapati@fintinc.com",
+    "employee_code": "MGR2003",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Harshu"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Guntur"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Team Lead"
+      }
+    ]
+  },
+  {
+    "name": "Sailaja Cherukuri",
+    "email": "sailaja.cherukuri@fintinc.com",
+    "employee_code": "MGR2004",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Curd Rice with Pickle"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mr. Prasad"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Company Director"
+      }
+    ]
+  },
+  {
+    "name": "Murali Krishna Vadlamani",
+    "email": "murali.vadlamani@fintinc.com",
+    "employee_code": "MGR2005",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Murali"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Nellore"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Project Engineer"
+      }
+    ]
+  },
+  {
+    "name": "Sandhya Pinnamaneni",
+    "email": "sandhya.pinnamaneni@fintinc.com",
+    "employee_code": "MGR2006",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Veg Biryani"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Geetha"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "HR Manager"
+      }
+    ]
+  },
+  {
+    "name": "Rakesh Chennupati",
+    "email": "rakesh.chennupati@fintinc.com",
+    "employee_code": "HR3001",
+    "role": "HR",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Raki"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Anantapur"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "HR Executive"
+      }
+    ]
+  },
+  {
+    "name": "Sujatha Nalluri",
+    "email": "sujatha.nalluri@fintinc.com",
+    "employee_code": "HR3002",
+    "role": "HR",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Idli"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Hemalatha"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Psychologist"
+      }
+    ]
+  },
+  {
+    "name": "Vivek Madduri",
+    "email": "vivek.madduri@fintinc.com",
+    "employee_code": "HR3003",
+    "role": "HR",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Vicky"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Kakinada"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Recruiter"
+      }
+    ]
+  },
+  {
+    "name": "Keerthi Kasireddy",
+    "email": "keerthi.kasireddy@fintinc.com",
+    "employee_code": "HR3004",
+    "role": "HR",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Dosa"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mr. Raghavan"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Counselor"
+      }
+    ]
+  },
+  {
+    "name": "Praveen Koppula",
+    "email": "praveen.koppula@fintinc.com",
+    "employee_code": "PAN4001",
+    "role": "PANEL",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Prav"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Vizianagaram"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Senior Developer"
+      }
+    ]
+  },
+  {
+    "name": "Divya Cherla",
+    "email": "divya.cherla@fintinc.com",
+    "employee_code": "PAN4002",
+    "role": "PANEL",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Chapati and Curry"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Indira"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Principal"
+      }
+    ]
+  },
+  {
+    "name": "Suresh Bandaru",
+    "email": "suresh.bandaru@fintinc.com",
+    "employee_code": "PAN4003",
+    "role": "PANEL",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Suri"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Ongole"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Business Analyst"
+      }
+    ]
+  },
+  {
+    "name": "Uma Maheshwari Pothula",
+    "email": "uma.pothula@fintinc.com",
+    "employee_code": "PAN4004",
+    "role": "PANEL",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Rice with Sambar"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mrs. Nirmala"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Bank Manager"
+      }
+    ]
+  }
+]

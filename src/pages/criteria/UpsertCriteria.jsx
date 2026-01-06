@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { BiPlus, BiEdit } from "react-icons/bi";
+import { BiPlus, BiEdit, BiUpload, BiDownload } from "react-icons/bi";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
@@ -59,8 +59,11 @@ const UpsertCriteria = () => {
 
   const isEdit = Boolean(criteriaId);
 
+  const fileInputRef = useRef(null);
   const [values, setValues] = useState(EMPTY_CRITERIA);
   const [saving, setSaving] = useState(false);
+  const [loadingJson, setLoadingJson] = useState(false);
+  const [jsonText, setJsonText] = useState("");
 
   /* =====================
      Load Criteria (EDIT)
@@ -155,6 +158,157 @@ const UpsertCriteria = () => {
   };
 
   /* =====================
+     JSON APPLY SHARED
+  ===================== */
+  const applyJsonToForm = (jsonData) => {
+    // Validate JSON structure
+    if (!jsonData.name) {
+      toast.error("JSON must contain a 'name' field");
+      return false;
+    }
+
+    if (!Array.isArray(jsonData.fields)) {
+      toast.error("JSON must contain a 'fields' array");
+      return false;
+    }
+
+    // Transform options from object/array into UI-friendly array
+    const transformedFields = jsonData.fields.map((field, idx) => {
+      let options = [];
+      if (field.options) {
+        if (typeof field.options === "object" && !Array.isArray(field.options)) {
+          options = Object.values(field.options);
+        } else if (Array.isArray(field.options)) {
+          options = field.options;
+        }
+      }
+
+      return {
+        label: field.label || "",
+        field_key: field.field_key || generateFieldKey(field.label || ""),
+        field_type: field.field_type || "TEXT",
+        is_required: field.is_required || false,
+        order_index: field.order_index !== undefined ? field.order_index : idx,
+        options: (field.field_type || "TEXT") === "SELECT" ? options : [],
+        ui_schema: field.ui_schema || null,
+        validation: field.validation || null,
+        _keyEdited: Boolean(field.field_key),
+      };
+    });
+
+    setValues({
+      name: jsonData.name || "",
+      description: jsonData.description || "",
+      fields: transformedFields,
+    });
+
+    toast.success("JSON applied successfully. Review and submit.");
+    return true;
+  };
+
+  /* =====================
+     JSON IMPORT
+  ===================== */
+  const handleJsonImport = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      toast.error("Please select a JSON file");
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      toast.error("Please select a valid JSON file");
+      return;
+    }
+
+    setLoadingJson(true);
+
+    try {
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
+      applyJsonToForm(jsonData);
+      fileInputRef.current.value = "";
+    } catch (error) {
+      toast.error(`Invalid JSON file: ${error.message}`);
+    } finally {
+      setLoadingJson(false);
+    }
+  };
+
+  /* =====================
+     EXPORT TO JSON
+  ===================== */
+  const handleJsonExport = () => {
+    if (!values.name.trim()) {
+      toast.error("Please enter a criteria name first");
+      return;
+    }
+
+    if (values.fields.length === 0) {
+      toast.error("Please add at least one field first");
+      return;
+    }
+
+    const exportData = {
+      name: values.name,
+      description: values.description,
+      fields: values.fields.map((field) => {
+        const fieldData = {
+          label: field.label,
+          field_key: field.field_key,
+          field_type: field.field_type,
+          is_required: field.is_required,
+          order_index: field.order_index,
+          ui_schema: field.ui_schema,
+          validation: field.validation,
+        };
+
+        if (field.field_type === "SELECT" && field.options.length > 0) {
+          const options = {};
+          field.options.forEach((o) => (options[o] = o));
+          fieldData.options = options;
+        }
+
+        return fieldData;
+      }),
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${values.name.replace(/\s+/g, "_")}_criteria.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("JSON exported successfully");
+  };
+
+  /* =====================
+     APPLY TEXT JSON
+  ===================== */
+  const handleJsonTextApply = () => {
+    if (!jsonText.trim()) {
+      toast.error("Please paste JSON first");
+      return;
+    }
+
+    try {
+      const jsonData = JSON.parse(jsonText);
+      const ok = applyJsonToForm(jsonData);
+      if (ok) {
+        // keep the text so user sees what was applied
+      }
+    } catch (error) {
+      toast.error(`Invalid JSON: ${error.message}`);
+    }
+  };
+
+  /* =====================
      Submit (CREATE / UPDATE)
   ===================== */
   const handleSubmit = async (e) => {
@@ -219,6 +373,78 @@ const UpsertCriteria = () => {
         title={isEdit ? "Edit Criteria" : "Create Criteria"}
         subtitle="Define reusable evaluation criteria"
       />
+
+      {/* =====================
+         JSON IMPORT/EXPORT
+      ===================== */}
+      {!isEdit && (
+        <Card className="mb-4">
+          <CardBody>
+            <h5 className="mb-3 d-flex align-items-center gap-2">
+              <BiUpload /> Import/Export JSON
+            </h5>
+
+            <div className="d-flex gap-2 mb-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                className="form-control"
+              />
+              <AppButton
+                loading={loadingJson}
+                onClick={handleJsonImport}
+                variant="primary"
+              >
+                Import JSON
+              </AppButton>
+              <AppButton
+                onClick={handleJsonExport}
+                variant="outline-secondary"
+              >
+                <BiDownload /> Export JSON
+              </AppButton>
+            </div>
+
+            <div className="d-flex gap-2">
+              <a
+                href="/templates/criteria_sample.json"
+                download
+                className="btn btn-outline-secondary btn-sm"
+              >
+                <BiDownload /> Download Sample JSON
+              </a>
+            </div>
+
+            <hr />
+
+            <div className="mb-2">
+              <label className="form-label">
+                Or paste JSON here
+              </label>
+              <textarea
+                className="form-control"
+                rows={6}
+                value={jsonText}
+                onChange={(e) => setJsonText(e.target.value)}
+                placeholder='{\n  "name": "Employee Performance Evaluation",\n  "description": "Optional description",\n  "fields": [ ... ]\n}'
+              />
+            </div>
+            <AppButton
+              type="button"
+              variant="outline-primary"
+              onClick={handleJsonTextApply}
+            >
+              Apply JSON
+            </AppButton>
+
+            <small className="text-muted d-block mt-2">
+              You can either upload a JSON file or paste JSON directly to populate
+              the criteria. Download the sample template to see the expected format.
+            </small>
+          </CardBody>
+        </Card>
+      )}
 
       <Card>
         <CardBody>
