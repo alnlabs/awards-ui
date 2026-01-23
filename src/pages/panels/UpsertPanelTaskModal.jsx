@@ -44,16 +44,19 @@ export default function UpsertPanelTaskModal({
 
   /* =====================
      Init edit mode
+     Using queueMicrotask to defer setState and avoid cascading renders
   ===================== */
   useEffect(() => {
     if (!task) return;
 
-    setCriteriaFieldId(task.criteria_field_id || "");
-    setTitle(task.title);
-    setDescription(task.description || "");
-    setMaxScore(task.max_score);
-    setOrderIndex(task.order_index);
-    setIsRequired(task.is_required);
+    queueMicrotask(() => {
+      setCriteriaFieldId(task.criteria_field_id || "");
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setMaxScore(task.max_score);
+      setOrderIndex(task.order_index);
+      setIsRequired(task.is_required);
+    });
   }, [task]);
 
   /* =====================

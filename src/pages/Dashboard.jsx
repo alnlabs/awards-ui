@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Container, Row, Col, Card, Button } from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
@@ -13,6 +13,8 @@ import {
   BiAward,
   BiCalendar,
   BiGroup,
+  BiPlus,
+  BiChevronRight,
 } from "react-icons/bi";
 
 import { fetchCycles } from "../store/slices/cyclesSlice";
@@ -22,6 +24,7 @@ import { fetchPanels } from "../store/slices/panelSlice";
 import { USER_ROLES, STATUS_COLORS } from "../utils/constants";
 import { formatDate } from "../utils/dateUtils";
 import Loading from "../components/common/Loading";
+import AppButton from "../components/common/AppButton";
 
 /* =====================
    Styled Components
@@ -126,6 +129,31 @@ const StatChange = styled.p`
   opacity: 0.8;
 `;
 
+const ActivityItem = styled.div`
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+
+  .activity-title {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+  }
+
+  .activity-meta {
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+`;
+
 /* =====================
    Dashboard (COMMON)
 ===================== */
@@ -168,9 +196,10 @@ const Dashboard = () => {
 
   const openCycles = cycles.filter((c) => c.status === "OPEN").length;
 
-  const myNominations = nominations.filter(
+  const myNominationsArray = nominations.filter(
     (n) => n.nominated_by_id === user?.id
-  ).length;
+  );
+  const myNominations = myNominationsArray.length;
 
   const finalizedNominations = nominations.filter(
     (n) => n.status === "FINALIZED"
@@ -473,10 +502,10 @@ const Dashboard = () => {
               <RecentActivityCard>
                 <Card.Body>
                   <SectionTitle>My Recent Nominations</SectionTitle>
-                  {myNominations.length === 0 ? (
+                  {myNominationsArray.length === 0 ? (
                     <p className="text-muted">No nominations yet</p>
                   ) : (
-                    myNominations
+                    myNominationsArray
                       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                       .slice(0, 5)
                       .map((nomination) => {

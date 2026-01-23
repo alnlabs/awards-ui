@@ -176,7 +176,7 @@ const UpsertCriteria = () => {
       const payload = {
         name: values.name,
         description: values.description,
-        fields: values.fields.map(({ _keyEdited, ...field }) => {
+        fields: values.fields.map(({ _keyEdited: _unused, ...field }) => {
           if (field.field_type === "SELECT") {
             const options = {};
             field.options.forEach((o) => (options[o] = o));

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Row, Col, Badge, Table, Form, Alert, Tabs, Tab, InputGroup, Container } from "react-bootstrap";
@@ -25,9 +25,11 @@ import {
   fetchCurrentAwards,
 } from "../../store/slices/awardsSlice";
 import { fetchCycles } from "../../store/slices/cyclesSlice";
+import { USER_ROLES } from "../../utils/constants";
 
 import Loading from "../../components/common/Loading";
 import PageHeader from "../../components/common/PageHeader";
+import AppButton from "../../components/common/AppButton";
 import { Card as StyledCard, CardBody } from "../../components/common/Card";
 
 /* =====================
@@ -170,6 +172,7 @@ const WinnersGallery = styled.div`
 
 const Awards = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { activeCycle } = useSelector((state) => state.cycles);
   const { user } = useSelector((state) => state.auth);
@@ -376,7 +379,7 @@ const Awards = () => {
                     a.winner?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     a.award_type?.label?.toLowerCase().includes(searchTerm.toLowerCase())
                   )
-                  .map((award, index) => (
+                  .map((award) => (
                     <WinnerCard key={award.id} $hoverable onClick={() => navigate(`/awards/${award.id}/view`)}>
                       <div className="rank-badge">{award.cycle?.name || "Award"}</div>
                       <AwardIcon>

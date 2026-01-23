@@ -26,14 +26,19 @@ export default function UpsertPanelMemberModal({
 
   /* =====================
      Init for edit
+     Using queueMicrotask to defer setState and avoid cascading renders
   ===================== */
   useEffect(() => {
     if (member) {
-      setUserId(member.user_id);
-      setRole(member.role);
+      queueMicrotask(() => {
+        setUserId(member.user_id);
+        setRole(member.role);
+      });
     } else {
-      setUserId("");
-      setRole("REVIEWER");
+      queueMicrotask(() => {
+        setUserId("");
+        setRole("REVIEWER");
+      });
     }
   }, [member]);
 

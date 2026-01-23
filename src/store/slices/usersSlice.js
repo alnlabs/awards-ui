@@ -11,7 +11,9 @@ export const fetchUsers = createAsyncThunk(
     try {
       const params = new URLSearchParams(filters || {}).toString();
       const url = params ? `/users?${params}` : "/users";
-      return await api.get(url); // ✅ array
+      const response = await api.get(url);
+      // API returns paginated response: { items: [], total, skip, limit }
+      return response?.items || [];
     } catch (error) {
       return rejectWithValue(
         error?.error || error?.message || "Failed to fetch users"
@@ -119,7 +121,7 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload;
+        state.users = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;

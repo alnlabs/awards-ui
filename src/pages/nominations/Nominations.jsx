@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Badge, Table, Modal, Form } from "react-bootstrap";
+import { Badge, Table, Form } from "react-bootstrap";
 import styled from "styled-components";
 import { BiPlus, BiListUl, BiUser } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
@@ -45,10 +45,8 @@ const Nominations = () => {
     history = [],
     loading,
   } = useSelector((state) => state.nominations);
-  const { cycles = [], activeCycle } = useSelector((state) => state.cycles);
+  const { cycles = [] } = useSelector((state) => state.cycles);
 
-  const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'single' | 'all', id?: string, cycleId?: string }
-  const [deleting, setDeleting] = useState(false);
   const [selectedCycleId, setSelectedCycleId] = useState(""); // Filter by cycle
 
   /* =====================
@@ -76,7 +74,9 @@ const Nominations = () => {
       const openCycle = cycles.find((c) => c.status === "OPEN");
       const fallbackCycle = openCycle || cycles[0]; // cycles[0] is newest due to API DESC sort
       if (fallbackCycle) {
-        setSelectedCycleId(fallbackCycle.id);
+        queueMicrotask(() => {
+          setSelectedCycleId(fallbackCycle.id);
+        });
       }
     }
   }, [cycles, selectedCycleId]);
@@ -90,57 +90,6 @@ const Nominations = () => {
   const filteredNominations = selectedCycleId
     ? displayNominations.filter((n) => n.cycle_id === selectedCycleId)
     : displayNominations;
-
-  // Group nominations by cycle for "Delete All" functionality
-  const nominationsByCycle = displayNominations.reduce((acc, n) => {
-    const cycleId = n.cycle_id;
-    if (!acc[cycleId]) {
-      acc[cycleId] = {
-        cycleId,
-        cycleName: n.cycle?.name || `Cycle ${cycleId}`,
-        count: 0,
-      };
-    }
-    acc[cycleId].count++;
-    return acc;
-  }, {});
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-
-    if (deleteTarget.type === "all" && !deleteTarget.cycleId) {
-      toast.error("Cycle ID is required to delete all nominations");
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      if (deleteTarget.type === "single") {
-        await dispatch(deleteNomination(deleteTarget.id)).unwrap();
-        toast.success("Nomination deleted successfully");
-      } else if (deleteTarget.type === "all" && deleteTarget.cycleId) {
-        const result = await dispatch(
-          deleteAllNominationsForCycle(deleteTarget.cycleId)
-        ).unwrap();
-        toast.success(
-          `Deleted ${result.deleted_count} nomination(s) successfully`
-        );
-      }
-
-      // Refresh the list
-      if (user.role === USER_ROLES.MANAGER) {
-        dispatch(fetchNominationHistory());
-      } else {
-        dispatch(fetchNominations({}));
-      }
-
-      setDeleteTarget(null);
-    } catch (err) {
-      toast.error(err || "Failed to delete nomination(s)");
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   /* =====================
      UI
@@ -157,35 +106,14 @@ const Nominations = () => {
             : "All nominations"
         }
         actions={
-          <>
-            {user?.role === USER_ROLES.MANAGER && (
-              <AppButton
-                icon={BiPlus}
-                onClick={() => navigate("/nominations/new")}
-              >
-                New Nomination
-              </AppButton>
-            )}
-            {user?.role === USER_ROLES.HR &&
-              filteredNominations.length > 0 &&
-              Object.keys(nominationsByCycle).length === 1 && (
-                <AppButton
-                  variant="danger"
-                  icon={BiTrash}
-                  onClick={() => {
-                    const cycles = Object.values(nominationsByCycle);
-                    setDeleteTarget({
-                      type: "all",
-                      cycleId: cycles[0].cycleId,
-                      cycleName: cycles[0].cycleName,
-                      count: cycles[0].count,
-                    });
-                  }}
-                >
-                  Delete All ({Object.values(nominationsByCycle)[0].count})
-                </AppButton>
-              )}
-          </>
+          user?.role === USER_ROLES.MANAGER && (
+            <AppButton
+              icon={BiPlus}
+              onClick={() => navigate("/nominations/new")}
+            >
+              New Nomination
+            </AppButton>
+          )
         }
       />
 
@@ -286,34 +214,16 @@ const Nominations = () => {
                       <td>{formatDate(n.submitted_at) || "Draft"}</td>
 
                       <td>
-                        <div className="d-flex gap-2">
-                          <AppButton
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => navigate(`/nominations/${n.id}/view`)}
-                          >
-                            View
-                          </AppButton>
-                          {user?.role === USER_ROLES.HR && (
-                            <AppButton
-                              variant="outline-danger"
-                              size="sm"
-                              icon={BiTrash}
-                              onClick={() =>
-                                setDeleteTarget({
-                                  type: "single",
-                                  id: n.id,
-                                  nomineeName: nominee.name || n.nominee_id,
-                                })
-                              }
-                            >
-                              Delete
-                            </AppButton>
-                          )}
-                        </div>
+                        <AppButton
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => navigate(`/nominations/${n.id}/view`)}
+                        >
+                          View
+                        </AppButton>
                       </td>
                     </tr>
-                  ))}
+                  );})}
                 </tbody>
               </Table>
             </TableWrapper>

@@ -13,6 +13,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 
 import { USER_ROLES } from "./utils/constants";
 
@@ -366,7 +367,7 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
                 <DashboardLayout>
-                  <Users />
+                  <UpsertUser />
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -378,6 +379,18 @@ function App() {
               <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
                 <DashboardLayout>
                   <UpsertUser />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ========= PROFILE ========= */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Profile />
                 </DashboardLayout>
               </ProtectedRoute>
             }

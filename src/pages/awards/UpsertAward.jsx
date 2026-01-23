@@ -66,7 +66,7 @@ const UpsertAward = () => {
             console.error("Failed to load cycle");
           }
         }
-      } catch (err) {
+      } catch {
         toast.error("Failed to load nomination");
         navigate("/cycles");
       } finally {
