@@ -12,6 +12,7 @@ import {
 import { fetchAssignmentsForNomination } from "../../store/slices/panelAssignmentsSlice";
 
 import { STATUS_COLORS, USER_ROLES } from "../../utils/constants";
+import { formatDateTime } from "../../utils/dateUtils";
 
 import PageHeader from "../../components/common/PageHeader";
 import AppButton from "../../components/common/AppButton";
@@ -140,14 +141,14 @@ const ViewNomination = () => {
           <div className="col-md-6">
             <strong>Submitted At</strong>
             <div className="text-muted">
-              {submitted_at ? new Date(submitted_at).toLocaleString() : "Draft"}
+              {formatDateTime(submitted_at) || "Draft"}
             </div>
           </div>
 
           <div className="col-md-6">
             <strong>Created At</strong>
             <div className="text-muted">
-              {new Date(created_at).toLocaleString()}
+              {formatDateTime(created_at)}
             </div>
           </div>
         </CardBody>
@@ -192,7 +193,7 @@ const ViewNomination = () => {
 
                 <small className="text-muted d-block mb-2">
                   Status: {a.status} · Assigned at{" "}
-                  {new Date(a.assigned_at).toLocaleString()}
+                  {formatDateTime(a.assigned_at)}
                 </small>
 
                 {/* PANEL MEMBERS */}
@@ -248,7 +249,7 @@ const ViewNomination = () => {
                   )}
 
                   <div className="text-muted small">
-                    {new Date(r.created_at).toLocaleString()}
+                    {formatDateTime(r.reviewed_at)}
                   </div>
                 </div>
               ))

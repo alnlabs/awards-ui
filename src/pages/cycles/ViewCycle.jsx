@@ -11,6 +11,7 @@ import AppButton from "../../components/common/AppButton";
 import Loading from "../../components/common/Loading";
 import api from "../../services/api";
 import { USER_ROLES } from "../../utils/constants";
+import { formatDate } from "../../utils/dateUtils";
 
 const ViewCycle = () => {
   // ✅ CORRECT PARAM NAME
@@ -24,6 +25,7 @@ const ViewCycle = () => {
 
   const [pendingStatus, setPendingStatus] = useState(null); // OPEN | CLOSED
   const [updating, setUpdating] = useState(false);
+  const [showEarlyClosureModal, setShowEarlyClosureModal] = useState(false);
 
   /* =====================
      Fetch cycle
@@ -61,23 +63,30 @@ const ViewCycle = () => {
   /* =====================
      Update Status
   ===================== */
-  const updateStatus = async () => {
+  const handleUpdateStatus = async (dropCycle = false) => {
     if (!pendingStatus || !cycle) return;
 
     setUpdating(true);
     try {
-      await api.patch(`/cycles/${cycle.id}/status`, {
+      await api.patch(`/cycles/${cycle.id}`, {
         status: pendingStatus,
+        drop_cycle: dropCycle
       });
 
       toast.success(`Cycle ${pendingStatus.toLowerCase()} successfully`);
       setCycle((prev) => ({ ...prev, status: pendingStatus }));
       setPendingStatus(null);
-    } catch {
-      toast.error("Failed to update cycle status");
+      setShowEarlyClosureModal(false);
+    } catch (err) {
+      toast.error(err?.error || "Failed to update cycle status");
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleEarlyClosureChoice = (drop) => {
+    setPendingStatus("CLOSED");
+    handleUpdateStatus(drop);
   };
 
   /* =====================
@@ -135,23 +144,55 @@ const ViewCycle = () => {
               </AppButton>
             )}
 
-            {/* Open cycle */}
+            {/* Activate/Deactivate cycle - only toggle between DRAFT and ACTIVE */}
             {user?.role === USER_ROLES.HR && cycle.status === "DRAFT" && (
               <AppButton
                 variant="success"
-                onClick={() => setPendingStatus("OPEN")}
+                onClick={() => setPendingStatus("ACTIVE")}
               >
-                Open Cycle
+                Activate Cycle
               </AppButton>
+            )}
+            
+            {user?.role === USER_ROLES.HR && cycle.status === "ACTIVE" && (
+              <>
+                <AppButton
+                  variant="outline-secondary"
+                  onClick={() => setPendingStatus("DRAFT")}
+                >
+                  Deactivate Cycle
+                </AppButton>
+                <AppButton
+                  variant="outline-primary"
+                  icon={BiEdit}
+                  onClick={() => navigate(`/cycles/${cycleId}/edit`)}
+                >
+                  Edit Details
+                </AppButton>
+              </>
             )}
 
             {/* Close cycle */}
             {user?.role === USER_ROLES.HR && cycle.status === "OPEN" && (
               <AppButton
-                variant="danger"
-                onClick={() => setPendingStatus("CLOSED")}
+                variant={new Date(cycle.end_date) < new Date().setHours(0,0,0,0) ? "primary" : "danger"}
+                onClick={() => {
+                  // Check if closing before end_date
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const endDate = new Date(cycle.end_date);
+                  endDate.setHours(0, 0, 0, 0);
+                  
+                  if (today < endDate) {
+                    // Early closure - show two-option modal
+                    setShowEarlyClosureModal(true);
+                  } else {
+                    // Normal closure
+                    setPendingStatus("CLOSED");
+                  }
+                }}
               >
-                Close Cycle
+                {new Date(cycle.end_date) < new Date().setHours(0,0,0,0) ? "Finalize & Close Cycle" : "Close Cycle"}
               </AppButton>
             )}
 
@@ -162,6 +203,17 @@ const ViewCycle = () => {
         }
       />
 
+      {cycle.status === "OPEN" && new Date(cycle.end_date) < new Date().setHours(0,0,0,0) && (
+        <Card className="mb-3 border-danger">
+          <CardBody className="bg-danger bg-opacity-10 text-danger">
+            <div className="d-flex align-items-center gap-2">
+              <strong>OVERDUE:</strong>
+              <span>This cycle's period ended on {formatDate(cycle.end_date)}. Please close the cycle to proceed with the final review and awards.</span>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       <Card>
         <CardBody>
           <p>
@@ -169,6 +221,9 @@ const ViewCycle = () => {
             <Badge bg="secondary" className="ms-2">
               {cycle.status}
             </Badge>
+            {cycle.status === "OPEN" && new Date(cycle.end_date) < new Date().setHours(0,0,0,0) && (
+              <Badge bg="danger" className="ms-2">OVERDUE</Badge>
+            )}
           </p>
 
           <p>
@@ -177,8 +232,8 @@ const ViewCycle = () => {
 
           <p>
             <strong>Period:</strong>{" "}
-            {new Date(cycle.start_date).toLocaleDateString()} –{" "}
-            {new Date(cycle.end_date).toLocaleDateString()}
+            {formatDate(cycle.start_date)} –{" "}
+            {formatDate(cycle.end_date)}
           </p>
 
           {cycle.description && (
@@ -186,6 +241,72 @@ const ViewCycle = () => {
           )}
         </CardBody>
       </Card>
+
+      {/* =====================
+         Early Closure Confirmation Modal (Two Options)
+      ===================== */}
+      <Modal
+        show={showEarlyClosureModal}
+        onHide={() => !updating && setShowEarlyClosureModal(false)}
+        backdrop="static"
+        centered
+      >
+        <Modal.Header closeButton={!updating}>
+          <Modal.Title>Early Cycle Closure</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <p className="text-warning mb-3">
+            <strong>Warning:</strong> You are closing this cycle before the scheduled end date.
+          </p>
+          <p>Please choose how to proceed:</p>
+          
+          <div className="mb-3">
+            <h6>Option 1: End Cycle</h6>
+            <ul>
+              <li>Close the cycle normally</li>
+              <li>Keep all nominations and awards</li>
+              <li>Continue with review process</li>
+            </ul>
+          </div>
+          
+          <div className="mb-3">
+            <h6>Option 2: Drop Cycle</h6>
+            <ul>
+              <li>Close the cycle and <strong className="text-danger">delete all data</strong></li>
+              <li>Remove all nominations</li>
+              <li>Remove all awards</li>
+              <li><strong className="text-danger">This action cannot be undone</strong></li>
+            </ul>
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <AppButton
+            variant="outline-secondary"
+            disabled={updating}
+            onClick={() => setShowEarlyClosureModal(false)}
+          >
+            Cancel
+          </AppButton>
+
+          <AppButton
+            variant="danger"
+            disabled={updating}
+            onClick={() => handleEarlyClosureChoice(true)}
+          >
+            Drop Cycle
+          </AppButton>
+
+          <AppButton
+            variant="primary"
+            disabled={updating}
+            onClick={() => handleEarlyClosureChoice(false)}
+          >
+            End Cycle
+          </AppButton>
+        </Modal.Footer>
+      </Modal>
 
       {/* =====================
          Confirmation Modal
@@ -198,21 +319,32 @@ const ViewCycle = () => {
       >
         <Modal.Header closeButton={!updating}>
           <Modal.Title>
-            {pendingStatus === "OPEN"
-              ? "Open Award Cycle"
+            {pendingStatus === "ACTIVE"
+              ? "Activate Award Cycle"
               : "Close Award Cycle"}
           </Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-          {pendingStatus === "OPEN" ? (
+          {pendingStatus === "ACTIVE" ? (
             <>
               <p>
-                You are about to <strong>open this award cycle</strong>.
+                You are about to <strong>activate this award cycle</strong>.
               </p>
               <ul>
-                <li>Nominations will be enabled</li>
-                <li>Managers can submit nominations</li>
+                <li>Cycle will be scheduled to open automatically when start date arrives</li>
+                <li>Nominations will be accepted during the configured window</li>
+                <li>You can toggle back to DRAFT anytime before the window opens</li>
+              </ul>
+            </>
+          ) : pendingStatus === "DRAFT" ? (
+            <>
+              <p>
+                You are about to <strong>deactivate this award cycle</strong>.
+              </p>
+              <ul>
+                <li>Cycle will return to DRAFT status</li>
+                <li>It will not open automatically</li>
               </ul>
             </>
           ) : (
@@ -241,11 +373,11 @@ const ViewCycle = () => {
           </AppButton>
 
           <AppButton
-            variant={pendingStatus === "OPEN" ? "success" : "danger"}
+            variant={pendingStatus === "ACTIVE" ? "success" : pendingStatus === "DRAFT" ? "warning" : "danger"}
             loading={updating}
-            onClick={updateStatus}
+            onClick={() => handleUpdateStatus(false)}
           >
-            Yes, {pendingStatus === "OPEN" ? "Open" : "Close"} Cycle
+            Yes, {pendingStatus === "ACTIVE" ? "Activate" : pendingStatus === "DRAFT" ? "Deactivate" : "Close"} Cycle
           </AppButton>
         </Modal.Footer>
       </Modal>

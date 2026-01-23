@@ -34,17 +34,26 @@ const UpsertNomination = () => {
      LOAD ACTIVE CYCLE
   ===================== */
   useEffect(() => {
-    api.get("/cycles").then((res) => {
-      const active = res.data.find((c) => c.status === "OPEN");
-      if (!active) {
-        toast.error("No active cycle available");
-        navigate("/nominations");
-        return;
-      }
+    api
+      .get("/cycles")
+      .then((res) => {
+        // ✅ api service returns data directly, not res.data
+        const cycles = Array.isArray(res) ? res : [];
+        const active = cycles.find((c) => c.status === "ACTIVE");
+        if (!active) {
+          toast.error("No active cycle available");
+          navigate("/nominations");
+          return;
+        }
 
-      setCycle(active);
-      setValues((p) => ({ ...p, cycle_id: active.id }));
-    });
+        setCycle(active);
+        setValues((p) => ({ ...p, cycle_id: active.id }));
+        setCycle(active);
+      })
+      .catch(() => {
+        toast.error("Failed to load cycles");
+        navigate("/nominations");
+      });
   }, [navigate]);
 
   /* =====================
@@ -54,14 +63,14 @@ const UpsertNomination = () => {
     api
       .get("/users", {
         params: {
-          role: "EMPLOYEE",
-          is_active: true,
-          page: 1,
-          page_size: 100, // backend max = 100
+          skip: 0,
+          limit: 100, // backend max = 100
         },
       })
       .then((res) => {
-        setEmployees(res.data?.items || []);
+        // ✅ backend returns { items: [], total: 0, ... }
+        const employees = res?.items || [];
+        setEmployees(employees);
       })
       .catch(() => toast.error("Failed to load employees"));
   }, []);

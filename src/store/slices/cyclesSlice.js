@@ -65,6 +65,7 @@ const cyclesSlice = createSlice({
   initialState: {
     cycles: [],
     currentCycle: null,
+    activeCycle: null,
     loading: false,
     error: null,
   },
@@ -86,6 +87,10 @@ const cyclesSlice = createSlice({
       .addCase(fetchCycles.fulfilled, (state, action) => {
         state.loading = false;
         state.cycles = action.payload || []; // ✅ SAFE
+        // Set activeCycle to the first OPEN cycle (prioritize OPEN over CLOSED)
+        const openCycle = (action.payload || []).find((c) => c.status === "OPEN");
+        const closedCycle = (action.payload || []).find((c) => c.status === "CLOSED");
+        state.activeCycle = openCycle || closedCycle || null;
       })
       .addCase(fetchCycles.rejected, (state, action) => {
         state.loading = false;

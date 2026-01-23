@@ -7,6 +7,7 @@ import { BiPlus, BiEdit, BiCalendar, BiBook } from "react-icons/bi";
 
 import { fetchCycles } from "../../store/slices/cyclesSlice";
 import { STATUS_COLORS, USER_ROLES } from "../../utils/constants";
+import { formatDate } from "../../utils/dateUtils";
 import Loading from "../../components/common/Loading";
 import PageHeader from "../../components/common/PageHeader";
 import AppButton from "../../components/common/AppButton";
@@ -95,10 +96,17 @@ const Cycles = () => {
             <Col key={cycle.id} xs={12} md={6} lg={4}>
               <CycleCard>
                 <CardHeader>
-                  <CardTitle>{cycle.name}</CardTitle>
-                  <Badge bg={STATUS_COLORS[cycle.status] || "secondary"}>
-                    {cycle.status}
-                  </Badge>
+                  <div className="d-flex flex-column align-items-end gap-1">
+                    <CardTitle className="mb-0">{cycle.name}</CardTitle>
+                    <div className="d-flex gap-1">
+                      {cycle.status === "OPEN" && new Date(cycle.end_date) < new Date().setHours(0,0,0,0) && (
+                        <Badge bg="danger">OVERDUE</Badge>
+                      )}
+                      <Badge bg={STATUS_COLORS[cycle.status] || "secondary"}>
+                        {cycle.status}
+                      </Badge>
+                    </div>
+                  </div>
                 </CardHeader>
 
                 <CardBody>
@@ -108,8 +116,8 @@ const Cycles = () => {
 
                   <p>
                     <strong>Period:</strong>{" "}
-                    {new Date(cycle.start_date).toLocaleDateString()} –{" "}
-                    {new Date(cycle.end_date).toLocaleDateString()}
+                    {formatDate(cycle.start_date)} –{" "}
+                    {formatDate(cycle.end_date)}
                   </p>
 
                   {cycle.description && (

@@ -44,7 +44,7 @@ const CycleForm = ({
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm({
     defaultValues,
     mode: "onBlur",
