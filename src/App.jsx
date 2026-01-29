@@ -24,7 +24,7 @@ import "./App.css";
    Core Pages
 ===================== */
 import { Cycles, UpsertCycle, ViewCycle } from "./pages/cycles";
-import { Awards, UpsertAward } from "./pages/awards";
+import { Awards, UpsertAward, ViewAward } from "./pages/awards";
 import { UpsertUser, Users } from "./pages/users";
 
 /* =====================
@@ -54,7 +54,6 @@ import {
   ReviewAssignment,
   AssignmentSummary,
   AssignmentReviews,
-  HRNominationSummary,
 } from "./pages/reviews";
 
 function App() {
@@ -79,18 +78,6 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <Dashboard />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* ========= PROFILE ========= */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout>
-                  <Profile />
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -331,23 +318,11 @@ function App() {
             }
           />
 
-          {/* HR – Nomination Summary per Cycle */}
-          <Route
-            path="/reviews/hr/:cycleId"
-            element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
-                <DashboardLayout>
-                  <HRNominationSummary />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
           {/* ========= AWARDS ========= */}
           <Route
             path="/awards"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute>
                 <DashboardLayout>
                   <Awards />
                 </DashboardLayout>
@@ -360,6 +335,16 @@ function App() {
               <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
                 <DashboardLayout>
                   <UpsertAward />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/awards/:id/view"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <ViewAward />
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -394,6 +379,18 @@ function App() {
               <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
                 <DashboardLayout>
                   <UpsertUser />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ========= PROFILE ========= */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Profile />
                 </DashboardLayout>
               </ProtectedRoute>
             }

@@ -7,6 +7,7 @@ export const USER_ROLES = {
 
 export const CYCLE_STATUS = {
   DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
   OPEN: 'OPEN',
   CLOSED: 'CLOSED',
   FINALIZED: 'FINALIZED',
@@ -21,12 +22,19 @@ export const NOMINATION_STATUS = {
 };
 
 export const STATUS_COLORS = {
+  // Cycle Statuses
   DRAFT: 'secondary',
+  ACTIVE: 'info',
   OPEN: 'success',
-  CLOSED: 'warning',
+  CLOSED: 'dark',
   FINALIZED: 'primary',
+  
+  // Nomination Statuses
   SUBMITTED: 'info',
-  HR_REVIEW: 'warning',
-  PANEL_REVIEW: 'info',
+  PANEL_REVIEW: 'warning',
+  HR_REVIEW: 'primary',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+  COMPLETED: 'success',
 };
 

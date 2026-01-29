@@ -5,8 +5,7 @@ import { Container, Form, Button, Card, Alert } from 'react-bootstrap';
 import { login } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import styled from 'styled-components';
-import { BiTrophy, BiEnvelope, BiLock, BiUser } from 'react-icons/bi';
-import { USER_ROLES } from '../../utils/constants';
+import { BiTrophy, BiEnvelope, BiLock } from 'react-icons/bi';
 
 const LoginContainer = styled(Container)`
   min-height: 100vh;
@@ -124,19 +123,10 @@ const LoginLink = styled.div`
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.auth);
-
-  // Static list of all available roles
-  const allRoles = [
-    { value: USER_ROLES.HR, label: 'HR' },
-    { value: USER_ROLES.MANAGER, label: 'Manager' },
-    { value: USER_ROLES.EMPLOYEE, label: 'Employee' },
-    { value: USER_ROLES.PANEL, label: 'Panel Member' },
-  ];
 
   useEffect(() => {
     if (user) {
@@ -147,19 +137,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedRole) {
-      toast.error('Please select a role to login');
-      return;
-    }
-
     try {
-      const result = await dispatch(
-        login({ 
-          email, 
-          password, 
-          role: selectedRole 
-        })
-      ).unwrap();
+      const result = await dispatch(login({ email, password })).unwrap();
       if (result) {
         toast.success('Login successful!');
         navigate('/dashboard');
@@ -212,30 +191,6 @@ const Login = () => {
                   required
                 />
               </div>
-            </StyledFormGroup>
-
-            <StyledFormGroup>
-              <Form.Label>Login As (Role)</Form.Label>
-              <div className="input-group">
-                <span className="input-group-text">
-                  <BiUser />
-                </span>
-                <Form.Select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  required
-                >
-                  <option value="">Select your role</option>
-                  {allRoles.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
-                </Form.Select>
-              </div>
-              <Form.Text className="text-muted">
-                Select your role to continue
-              </Form.Text>
             </StyledFormGroup>
 
             <StyledButton type="submit" disabled={loading}>

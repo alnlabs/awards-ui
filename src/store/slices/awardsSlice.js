@@ -29,52 +29,6 @@ export const fetchAwardsHistory = createAsyncThunk(
   }
 );
 
-/* ---------- AWARD TYPES (CRUD) ---------- */
-export const fetchAwardTypes = createAsyncThunk(
-  "awards/fetchAwardTypes",
-  async (_, { rejectWithValue }) => {
-    try {
-      return await api.get("/awards/types");
-    } catch (error) {
-      return rejectWithValue(error?.error || "Failed to fetch award types");
-    }
-  }
-);
-
-export const createAwardType = createAsyncThunk(
-  "awards/createAwardType",
-  async (data, { rejectWithValue }) => {
-    try {
-      return await api.post("/awards/types", data);
-    } catch (error) {
-      return rejectWithValue(error?.error || "Failed to create award type");
-    }
-  }
-);
-
-export const updateAwardType = createAsyncThunk(
-  "awards/updateAwardType",
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      return await api.put(`/awards/types/${id}`, data);
-    } catch (error) {
-      return rejectWithValue(error?.error || "Failed to update award type");
-    }
-  }
-);
-
-export const deleteAwardType = createAsyncThunk(
-  "awards/deleteAwardType",
-  async (id, { rejectWithValue }) => {
-    try {
-      await api.delete(`/awards/types/${id}`);
-      return id;
-    } catch (error) {
-      return rejectWithValue(error?.error || "Failed to delete award type");
-    }
-  }
-);
-
 /* ---------- HR – NOMINATIONS WITH SCORES ---------- */
 export const fetchNominationsWithScores = createAsyncThunk(
   "awards/fetchNominationsWithScores",
@@ -113,6 +67,52 @@ export const finalizeCycleAwards = createAsyncThunk(
   }
 );
 
+/* ---------- AWARD TYPES ---------- */
+export const fetchAwardTypes = createAsyncThunk(
+  "awards/fetchAwardTypes",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await api.get("/awards/types");
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to fetch award types");
+    }
+  }
+);
+
+export const createAwardType = createAsyncThunk(
+  "awards/createAwardType",
+  async (data, { rejectWithValue }) => {
+    try {
+      return await api.post("/awards/types", data);
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to create award type");
+    }
+  }
+);
+
+export const updateAwardType = createAsyncThunk(
+  "awards/updateAwardType",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      return await api.put(`/awards/types/${id}`, data);
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to update award type");
+    }
+  }
+);
+
+export const deleteAwardType = createAsyncThunk(
+  "awards/deleteAwardType",
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/awards/types/${id}`);
+      return id; // Return id for state update
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to delete award type");
+    }
+  }
+);
+
 /* =====================
    SLICE
 ===================== */
@@ -127,9 +127,7 @@ const awardsSlice = createSlice({
 
     /* HR WORKFLOW */
     nominationsWithScores: [],
-
-    /* Award types catalog */
-    awardTypes: [],
+    awardTypes: [], // Award types catalog
 
     loading: false,
     error: null,
@@ -178,6 +176,18 @@ const awardsSlice = createSlice({
         state.error = action.payload;
       })
 
+      /* ---------- CREATE AWARD ---------- */
+      .addCase(createAward.fulfilled, (state, action) => {
+        if (action.payload) {
+          state.current.push(action.payload);
+        }
+      })
+
+      /* ---------- FINALIZE ---------- */
+      .addCase(finalizeCycleAwards.fulfilled, (state) => {
+        state.loading = false;
+      })
+
       /* ---------- AWARD TYPES ---------- */
       .addCase(fetchAwardTypes.pending, (state) => {
         state.loading = true;
@@ -190,33 +200,25 @@ const awardsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(createAwardType.fulfilled, (state, action) => {
         if (action.payload) {
           state.awardTypes.push(action.payload);
         }
       })
+
       .addCase(updateAwardType.fulfilled, (state, action) => {
-        const updated = action.payload;
-        const idx = state.awardTypes.findIndex((t) => t.id === updated.id);
-        if (idx !== -1) {
-          state.awardTypes[idx] = updated;
-        }
-      })
-      .addCase(deleteAwardType.fulfilled, (state, action) => {
-        const id = action.payload;
-        state.awardTypes = state.awardTypes.filter((t) => t.id !== id);
-      })
-
-      /* ---------- CREATE AWARD ---------- */
-      .addCase(createAward.fulfilled, (state, action) => {
         if (action.payload) {
-          state.current.push(action.payload);
+          const index = state.awardTypes.findIndex((at) => at.id === action.payload.id);
+          if (index !== -1) {
+            state.awardTypes[index] = action.payload;
+          }
         }
       })
 
-      /* ---------- FINALIZE ---------- */
-      .addCase(finalizeCycleAwards.fulfilled, (state) => {
-        state.loading = false;
+      .addCase(deleteAwardType.fulfilled, (state, action) => {
+        // Remove the deleted award type from the list
+        state.awardTypes = state.awardTypes.filter((at) => at.id !== action.payload);
       });
   },
 });

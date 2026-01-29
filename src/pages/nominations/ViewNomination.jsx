@@ -12,6 +12,7 @@ import {
 import { fetchAssignmentsForNomination } from "../../store/slices/panelAssignmentsSlice";
 
 import { STATUS_COLORS, USER_ROLES } from "../../utils/constants";
+import { formatDateTime } from "../../utils/dateUtils";
 
 import PageHeader from "../../components/common/PageHeader";
 import AppButton from "../../components/common/AppButton";
@@ -72,25 +73,13 @@ const ViewNomination = () => {
     created_at,
     answers = [],
     reviews = [],
-    nominee: nomineeDetails,
-    cycle: cycleDetails,
-    nominated_by: nominatedBy,
   } = currentNomination;
-
-  const nominee = nomineeDetails || {};
-  const cycle = cycleDetails || {};
 
   /* =====================
      Permissions
   ===================== */
-  // HR can assign panels when SUBMITTED or in HR_REVIEW (add more panels),
-  // but already assigned panels are prevented at API level.
   const canAssignPanels =
-    user?.role === USER_ROLES.HR &&
-    ["SUBMITTED", "HR_REVIEW"].includes(status);
-  const canViewHrSummary =
-    user?.role === USER_ROLES.HR &&
-    ["HR_REVIEW", "FINALIZED", "PANEL_REVIEW"].includes(status);
+    user?.role === USER_ROLES.HR && ["SUBMITTED", "HR_REVIEW"].includes(status);
 
   /* =====================
      Render
@@ -114,16 +103,6 @@ const ViewNomination = () => {
               </AppButton>
             )}
 
-            {canViewHrSummary && (
-              <AppButton
-                className="me-2"
-                variant="outline-primary"
-                onClick={() => navigate(`/reviews/hr/${cycle_id}`)}
-              >
-                HR Summary
-              </AppButton>
-            )}
-
             <AppButton
               variant="secondary"
               icon={BiArrowBack}
@@ -143,38 +122,14 @@ const ViewNomination = () => {
 
         <CardBody className="row g-3">
           <div className="col-md-6">
-            <strong>Nominee</strong>
-            <div className="text-muted">
-              {nominee.name || nominee_id}
-            </div>
-            {nominee.email && (
-              <div className="text-muted small">{nominee.email}</div>
-            )}
-            {nominee.employee_code && (
-              <div className="text-muted small">
-                Code: {nominee.employee_code}
-              </div>
-            )}
+            <strong>Nominee ID</strong>
+            <div className="text-muted">{nominee_id}</div>
           </div>
 
           <div className="col-md-6">
-            <strong>Cycle</strong>
-            <div className="text-muted">
-              {cycle.name
-                ? `${cycle.name} (${cycle.quarter} ${cycle.year})`
-                : cycle_id}
-            </div>
+            <strong>Cycle ID</strong>
+            <div className="text-muted">{cycle_id}</div>
           </div>
-
-          {nominatedBy?.name && (
-            <div className="col-md-6">
-              <strong>Nominated By</strong>
-              <div className="text-muted">{nominatedBy.name}</div>
-              {nominatedBy.email && (
-                <div className="text-muted small">{nominatedBy.email}</div>
-              )}
-            </div>
-          )}
 
           <div className="col-md-6">
             <strong>Status</strong>
@@ -186,14 +141,14 @@ const ViewNomination = () => {
           <div className="col-md-6">
             <strong>Submitted At</strong>
             <div className="text-muted">
-              {submitted_at ? new Date(submitted_at).toLocaleString() : "Draft"}
+              {formatDateTime(submitted_at) || "Draft"}
             </div>
           </div>
 
           <div className="col-md-6">
             <strong>Created At</strong>
             <div className="text-muted">
-              {new Date(created_at).toLocaleString()}
+              {formatDateTime(created_at)}
             </div>
           </div>
         </CardBody>
@@ -238,7 +193,7 @@ const ViewNomination = () => {
 
                 <small className="text-muted d-block mb-2">
                   Status: {a.status} · Assigned at{" "}
-                  {new Date(a.assigned_at).toLocaleString()}
+                  {formatDateTime(a.assigned_at)}
                 </small>
 
                 {/* PANEL MEMBERS */}
@@ -279,33 +234,22 @@ const ViewNomination = () => {
                 <div key={r.id} className="border rounded p-3 mb-2">
                   <div className="d-flex align-items-center mb-1">
                     <BiUser className="me-2" />
-                    <div>
-                      <strong>
-                        {r.reviewer?.name || "Panel Member"}
-                      </strong>
-                      {r.reviewer?.email && (
-                        <div className="text-muted small">
-                          {r.reviewer.email}
-                        </div>
-                      )}
-                    </div>
+                    <strong>Panel Member</strong>
                   </div>
 
                   <div className="mb-1">
                     <strong>Score:</strong> {r.score}
                   </div>
 
-                  {r.comment && (
+                  {r.comments && (
                     <div className="mb-1">
                       <strong>Comments:</strong>
-                      <div className="text-muted">{r.comment}</div>
+                      <div className="text-muted">{r.comments}</div>
                     </div>
                   )}
 
                   <div className="text-muted small">
-                    {r.reviewed_at
-                      ? new Date(r.reviewed_at).toLocaleString()
-                      : ""}
+                    {formatDateTime(r.reviewed_at)}
                   </div>
                 </div>
               ))

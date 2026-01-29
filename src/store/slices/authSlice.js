@@ -22,9 +22,9 @@ const initialState = {
  */
 export const login = createAsyncThunk(
   "auth/login",
-  async ({ email, password, role }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const authData = await authService.login(email, password, role);
+      const authData = await authService.login(email, password);
       // authData = { access_token }
 
       const user = await authService.getMe();

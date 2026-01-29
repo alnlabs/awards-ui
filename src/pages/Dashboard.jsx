@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Container, Row, Col, Card, Badge } from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
@@ -11,19 +11,18 @@ import {
   BiCheckCircle,
   BiTimer,
   BiAward,
-  BiGroup,
   BiCalendar,
-  BiTrendingUp,
-  BiChevronRight,
+  BiGroup,
   BiPlus,
+  BiChevronRight,
 } from "react-icons/bi";
 
 import { fetchCycles } from "../store/slices/cyclesSlice";
 import { fetchNominations } from "../store/slices/nominationsSlice";
 import { fetchPanels } from "../store/slices/panelSlice";
-import { fetchMyPanelAssignments } from "../store/slices/panelAssignmentsSlice";
 
 import { USER_ROLES, STATUS_COLORS } from "../utils/constants";
+import { formatDate } from "../utils/dateUtils";
 import Loading from "../components/common/Loading";
 import AppButton from "../components/common/AppButton";
 
@@ -31,129 +30,75 @@ import AppButton from "../components/common/AppButton";
    Styled Components
 ===================== */
 
-const DashboardContainer = styled(Container)`
-  padding: 2rem 1rem;
-`;
-
-const WelcomeSection = styled.div`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 2.5rem;
-  color: white;
-  margin-bottom: 2.5rem;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-
-  p {
-    font-size: 1.1rem;
-    opacity: 0.95;
-    margin: 0;
-  }
-`;
-
 const StatCard = styled(Card)`
   border: none;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
   height: 100%;
-  background: ${(props) => props.$bg || "white"};
-  color: ${(props) => props.$textColor || "#212529"};
-  cursor: ${(props) => (props.$clickable ? "pointer" : "default")};
-  overflow: hidden;
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: ${(props) => props.$accentColor || "transparent"};
-  }
+  background: ${(props) => props.bg || "white"};
+  color: ${(props) => props.textColor || "#212529"};
 
   &:hover {
-    transform: ${(props) => (props.$clickable ? "translateY(-6px)" : "none")};
-    box-shadow: ${(props) =>
-      props.$clickable
-        ? "0 8px 24px rgba(0, 0, 0, 0.12)"
-        : "0 4px 12px rgba(0, 0, 0, 0.08)"};
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
   .card-body {
-    padding: 1.75rem;
+    padding: 1.5rem;
   }
 `;
 
-const StatHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-`;
-
 const StatIcon = styled.div`
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${(props) => props.$iconBg || "rgba(255, 255, 255, 0.2)"};
-  font-size: 1.75rem;
-  color: ${(props) => props.$iconColor || "inherit"};
+  background: rgba(255, 255, 255, 0.2);
+  margin-bottom: 1rem;
+  font-size: 2rem;
 `;
 
 const StatValue = styled.h2`
-  font-size: 2.75rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  margin: 0;
-  line-height: 1;
+  margin: 0 0 0.5rem;
 `;
 
 const StatLabel = styled.p`
-  margin: 0.5rem 0 0;
-  opacity: 0.85;
+  margin: 0;
+  opacity: 0.9;
   font-size: 0.95rem;
-  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
 
-const StatChange = styled.div`
-  font-size: 0.85rem;
-  opacity: 0.8;
-  margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+const WelcomeCard = styled(Card)`
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-bottom: 2rem;
+
+  .card-body {
+    padding: 2rem;
+  }
 `;
 
 const QuickActionsCard = styled(Card)`
   border: none;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   height: 100%;
-
-  .card-body {
-    padding: 1.75rem;
-  }
 `;
 
-const QuickActionButton = styled(AppButton)`
+const QuickActionButton = styled(Button)`
   width: 100%;
-  justify-content: flex-start;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-
+  margin-bottom: 0.75rem;
+  text-align: left;
+  
   &:last-child {
     margin-bottom: 0;
   }
@@ -161,39 +106,52 @@ const QuickActionButton = styled(AppButton)`
 
 const RecentActivityCard = styled(Card)`
   border: none;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   height: 100%;
+`;
 
-  .card-body {
-    padding: 1.75rem;
-  }
+const SectionTitle = styled.h5`
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+`;
+
+const StatHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const StatChange = styled.p`
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
 `;
 
 const ActivityItem = styled.div`
-  padding: 1rem 0;
+  padding: 1rem;
   border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s;
 
   &:last-child {
     border-bottom: none;
   }
 
+  &:hover {
+    background-color: #f8f9fa;
+  }
+
   .activity-title {
     font-weight: 600;
+    color: #212529;
     margin-bottom: 0.25rem;
   }
 
   .activity-meta {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: #6c757d;
   }
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: #212529;
 `;
 
 /* =====================
@@ -212,7 +170,7 @@ const Dashboard = () => {
     (state) => state.nominations
   );
   const { panels } = useSelector((state) => state.panels);
-  const { assignments: panelAssignments } = useSelector(
+  const { myAssignments: panelAssignments = [] } = useSelector(
     (state) => state.panelAssignments
   );
 
@@ -227,11 +185,7 @@ const Dashboard = () => {
     if (user?.role === USER_ROLES.HR) {
       dispatch(fetchPanels());
     }
-
-    if (user?.role === USER_ROLES.PANEL || user?.is_panel_member) {
-      dispatch(fetchMyPanelAssignments());
-    }
-  }, [dispatch, user?.role, user?.is_panel_member]);
+  }, [dispatch, user?.role]);
 
   const loading = cyclesLoading || nominationsLoading;
   if (loading) return <Loading />;
@@ -240,35 +194,33 @@ const Dashboard = () => {
      Derived Metrics
   ===================== */
 
-  const openCycles = cycles.filter((c) => c.status === "OPEN");
-  const closedCycles = cycles.filter((c) => c.status === "CLOSED");
-  const activeCycle = cycles.find((c) => c.status === "OPEN");
+  const openCycles = cycles.filter((c) => c.status === "OPEN").length;
 
-  const totalNominations = nominations.length;
-  const myNominations = nominations.filter(
+  const myNominationsArray = nominations.filter(
     (n) => n.nominated_by_id === user?.id
   );
-  const submittedNominations = nominations.filter(
-    (n) => n.status === "SUBMITTED"
+  const myNominations = myNominationsArray.length;
+
+  const finalizedNominations = nominations.filter(
+    (n) => n.status === "FINALIZED"
   ).length;
+
   const panelReviewNominations = nominations.filter(
     (n) => n.status === "PANEL_REVIEW"
   ).length;
+
   const hrReviewNominations = nominations.filter(
     (n) => n.status === "HR_REVIEW"
   ).length;
-  const finalizedNominations = nominations.filter(
-    (n) => n.status === "FINALIZED"
-  );
 
-  const pendingPanelReviews =
+  const _pendingPanelReviews =
     user?.role === USER_ROLES.PANEL || user?.is_panel_member
-      ? panelAssignments.filter((a) => a.status !== "COMPLETED").length
+      ? panelAssignments.filter((a) => a.assignment_status !== "COMPLETED").length
       : 0;
 
-  const completedPanelReviews =
+  const _completedPanelReviews =
     user?.role === USER_ROLES.PANEL || user?.is_panel_member
-      ? panelAssignments.filter((a) => a.status === "COMPLETED").length
+      ? panelAssignments.filter((a) => a.assignment_status === "COMPLETED").length
       : 0;
 
   // Recent nominations (last 5)
@@ -281,18 +233,18 @@ const Dashboard = () => {
   ===================== */
 
   return (
-    <DashboardContainer fluid>
+    <Container fluid>
       {/* =====================
-          Welcome Section
+          Welcome
       ===================== */}
-      <WelcomeSection>
-        <h1>Welcome back, {user?.name}!</h1>
-        <p>
-          {activeCycle
-            ? `Active cycle: ${activeCycle.name} (${activeCycle.quarter} ${activeCycle.year})`
-            : "Here's what's happening with the Employee Awards program."}
-        </p>
-      </WelcomeSection>
+      <WelcomeCard>
+        <Card.Body>
+          <h1>Welcome back, {user?.name}!</h1>
+          <p className="mb-0">
+            Here's what's happening with the Employee Awards program.
+          </p>
+        </Card.Body>
+      </WelcomeCard>
 
       <Row className="g-4">
         {/* =====================
@@ -302,109 +254,59 @@ const Dashboard = () => {
           <>
             <Col xs={12} sm={6} md={4} lg={3}>
               <StatCard
-                $bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                $textColor="white"
-                $accentColor="#667eea"
-                $clickable
-                onClick={() => navigate("/cycles")}
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiBook />
-                    </StatIcon>
-                  </StatHeader>
+                  <StatIcon>
+                    <BiBook />
+                  </StatIcon>
                   <StatValue>{cycles.length}</StatValue>
                   <StatLabel>Total Cycles</StatLabel>
-                  <StatChange>
-                    <BiTrendingUp /> {openCycles.length} active
-                  </StatChange>
                 </Card.Body>
               </StatCard>
             </Col>
 
             <Col xs={12} sm={6} md={4} lg={3}>
               <StatCard
-                $bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-                $textColor="white"
-                $accentColor="#43e97b"
-                $clickable
-                onClick={() => navigate("/cycles")}
+                bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiTimer />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{openCycles.length}</StatValue>
+                  <StatIcon>
+                    <BiTimer />
+                  </StatIcon>
+                  <StatValue>{openCycles}</StatValue>
                   <StatLabel>Open Cycles</StatLabel>
-                  <StatChange>
-                    <BiCalendar /> {closedCycles.length} closed
-                  </StatChange>
                 </Card.Body>
               </StatCard>
             </Col>
 
             <Col xs={12} sm={6} md={4} lg={3}>
               <StatCard
-                $bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-                $textColor="white"
-                $accentColor="#f093fb"
-                $clickable
-                onClick={() => navigate("/panels")}
+                bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiGroup />
-                    </StatIcon>
-                  </StatHeader>
+                  <StatIcon>
+                    <BiUser />
+                  </StatIcon>
                   <StatValue>{panels.length}</StatValue>
-                  <StatLabel>Review Panels</StatLabel>
+                  <StatLabel>Panels</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
 
             <Col xs={12} sm={6} md={4} lg={3}>
               <StatCard
-                $bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
-                $textColor="white"
-                $accentColor="#fa709a"
-                $clickable
-                onClick={() => navigate("/nominations")}
+                bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiListUl />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{totalNominations}</StatValue>
-                  <StatLabel>Total Nominations</StatLabel>
-                  <StatChange>
-                    {submittedNominations} submitted, {hrReviewNominations}{" "}
-                    in review
-                  </StatChange>
-                </Card.Body>
-              </StatCard>
-            </Col>
-
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard
-                $bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-                $textColor="white"
-                $accentColor="#4facfe"
-                $clickable
-                onClick={() => navigate("/awards")}
-              >
-                <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiTrophy />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{finalizedNominations.length}</StatValue>
+                  <StatIcon>
+                    <BiTrophy />
+                  </StatIcon>
+                  <StatValue>{finalizedNominations}</StatValue>
                   <StatLabel>Finalized Awards</StatLabel>
                 </Card.Body>
               </StatCard>
@@ -492,7 +394,7 @@ const Dashboard = () => {
                                 {cycle.name
                                   ? `${cycle.name} (${cycle.quarter} ${cycle.year})`
                                   : "Unknown cycle"}{" "}
-                                • {new Date(nomination.created_at).toLocaleDateString()}
+                                • {formatDate(nomination.created_at)}
                               </div>
                             </div>
                             <div>
@@ -527,68 +429,46 @@ const Dashboard = () => {
         ===================== */}
         {user?.role === USER_ROLES.MANAGER && (
           <>
-            <Col xs={12} sm={6} md={4} lg={3}>
+            <Col xs={12} sm={6} md={4}>
               <StatCard
-                $bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                $textColor="white"
-                $accentColor="#667eea"
-                $clickable
-                onClick={() => navigate("/nominations")}
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiListUl />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{myNominations.length}</StatValue>
+                  <StatIcon>
+                    <BiListUl />
+                  </StatIcon>
+                  <StatValue>{myNominations}</StatValue>
                   <StatLabel>My Nominations</StatLabel>
-                  <StatChange>
-                    {myNominations.filter((n) => n.status === "SUBMITTED").length}{" "}
-                    submitted
-                  </StatChange>
                 </Card.Body>
               </StatCard>
             </Col>
 
-            <Col xs={12} sm={6} md={4} lg={3}>
+            <Col xs={12} sm={6} md={4}>
               <StatCard
-                $bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-                $textColor="white"
-                $accentColor="#43e97b"
-                $clickable
-                onClick={() => navigate("/cycles")}
+                bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiBook />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{openCycles.length}</StatValue>
+                  <StatIcon>
+                    <BiBook />
+                  </StatIcon>
+                  <StatValue>{openCycles}</StatValue>
                   <StatLabel>Open Cycles</StatLabel>
-                  {activeCycle && (
-                    <StatChange>{activeCycle.name}</StatChange>
-                  )}
                 </Card.Body>
               </StatCard>
             </Col>
 
-            <Col xs={12} sm={6} md={4} lg={3}>
+            <Col xs={12} sm={6} md={4}>
               <StatCard
-                $bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
-                $textColor="white"
-                $accentColor="#fa709a"
-                $clickable
-                onClick={() => navigate("/awards")}
+                bg="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+                textColor="white"
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiTrophy />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{finalizedNominations.length}</StatValue>
+                  <StatIcon>
+                    <BiTrophy />
+                  </StatIcon>
+                  <StatValue>{finalizedNominations}</StatValue>
                   <StatLabel>Finalized Awards</StatLabel>
                 </Card.Body>
               </StatCard>
@@ -622,10 +502,10 @@ const Dashboard = () => {
               <RecentActivityCard>
                 <Card.Body>
                   <SectionTitle>My Recent Nominations</SectionTitle>
-                  {myNominations.length === 0 ? (
+                  {myNominationsArray.length === 0 ? (
                     <p className="text-muted">No nominations yet</p>
                   ) : (
-                    myNominations
+                    myNominationsArray
                       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                       .slice(0, 5)
                       .map((nomination) => {
@@ -638,7 +518,7 @@ const Dashboard = () => {
                                   {nominee.name || nomination.nominee_id}
                                 </div>
                                 <div className="activity-meta">
-                                  {new Date(nomination.created_at).toLocaleDateString()}
+                                  {formatDate(nomination.created_at)}
                                 </div>
                               </div>
                               <div>
@@ -660,50 +540,40 @@ const Dashboard = () => {
         {/* =====================
             PANEL DASHBOARD
         ===================== */}
-        {(user?.role === USER_ROLES.PANEL || user?.is_panel_member) && (
+        {user?.role === USER_ROLES.PANEL && (
           <>
-            <Col xs={12} sm={6} md={4} lg={3}>
+            <Col xs={12} sm={6} md={4}>
               <StatCard
                 $bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                 $textColor="white"
                 $accentColor="#667eea"
                 $clickable
-                onClick={() => navigate("/reviews/my")}
+                onClick={() => navigate("/reviews")}
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiTimer />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{pendingPanelReviews}</StatValue>
-                  <StatLabel>Pending Reviews</StatLabel>
-                  <StatChange>
-                    {completedPanelReviews} completed
-                  </StatChange>
+                  <StatIcon>
+                    <BiTimer />
+                  </StatIcon>
+                  <StatValue>{panelAssignments.filter((a) => a.assignment_status !== "COMPLETED").length}</StatValue>
+                  <StatLabel>Assignments Pending</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
 
-            <Col xs={12} sm={6} md={4} lg={3}>
+            <Col xs={12} sm={6} md={4}>
               <StatCard
                 $bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
                 $textColor="white"
                 $accentColor="#43e97b"
                 $clickable
-                onClick={() => navigate("/reviews/my")}
+                onClick={() => navigate("/reviews")}
               >
                 <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiCheckCircle />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{panelAssignments.length}</StatValue>
-                  <StatLabel>Total Assignments</StatLabel>
-                  <StatChange>
-                    {completedPanelReviews} completed
-                  </StatChange>
+                  <StatIcon>
+                    <BiCheckCircle />
+                  </StatIcon>
+                  <StatValue>{nominations.length}</StatValue>
+                  <StatLabel>Total Assigned</StatLabel>
                 </Card.Body>
               </StatCard>
             </Col>
@@ -715,7 +585,7 @@ const Dashboard = () => {
                   <SectionTitle>Quick Actions</SectionTitle>
                   <QuickActionButton
                     variant="primary"
-                    onClick={() => navigate("/reviews/my")}
+                    onClick={() => navigate("/reviews")}
                   >
                     <BiListUl className="me-2" />
                     My Reviews
@@ -730,54 +600,23 @@ const Dashboard = () => {
             EMPLOYEE DASHBOARD
         ===================== */}
         {user?.role === USER_ROLES.EMPLOYEE && (
-          <>
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard
-                $bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                $textColor="white"
-                $accentColor="#667eea"
-                $clickable
-                onClick={() => navigate("/awards")}
-              >
-                <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiTrophy />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>
-                    {finalizedNominations.filter(
-                      (n) => n.nominee_id === user?.id
-                    ).length}
-                  </StatValue>
-                  <StatLabel>Awards Received</StatLabel>
-                </Card.Body>
-              </StatCard>
-            </Col>
-
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <StatCard
-                $bg="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-                $textColor="white"
-                $accentColor="#43e97b"
-                $clickable
-                onClick={() => navigate("/cycles")}
-              >
-                <Card.Body>
-                  <StatHeader>
-                    <StatIcon $iconBg="rgba(255, 255, 255, 0.2)">
-                      <BiBook />
-                    </StatIcon>
-                  </StatHeader>
-                  <StatValue>{openCycles.length}</StatValue>
-                  <StatLabel>Active Cycles</StatLabel>
-                </Card.Body>
-              </StatCard>
-            </Col>
-          </>
+          <Col xs={12} sm={6} md={4}>
+            <StatCard
+              bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+              textColor="white"
+            >
+              <Card.Body>
+                <StatIcon>
+                  <BiTrophy />
+                </StatIcon>
+                <StatValue>{finalizedNominations}</StatValue>
+                <StatLabel>Awards Received</StatLabel>
+              </Card.Body>
+            </StatCard>
+          </Col>
         )}
       </Row>
-    </DashboardContainer>
+    </Container>
   );
 };
 

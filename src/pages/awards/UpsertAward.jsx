@@ -62,11 +62,11 @@ const UpsertAward = () => {
           try {
             const cycleData = await api.get(`/cycles/${data.cycle_id}`);
             setCycle(cycleData);
-          } catch (err) {
-            console.error("Failed to load cycle:", err);
+          } catch {
+            console.error("Failed to load cycle");
           }
         }
-      } catch (err) {
+      } catch {
         toast.error("Failed to load nomination");
         navigate("/cycles");
       } finally {
@@ -125,8 +125,8 @@ const UpsertAward = () => {
 
   if (loading) return <Loading />;
 
-  // Awards can be created during nomination window (OPEN)
-  const canCreateAward = cycle?.status === "OPEN";
+  // Awards can be created during nomination window (OPEN) or if cycle is CLOSED (to finalize)
+  const canCreateAward = cycle?.status === "OPEN" || cycle?.status === "CLOSED";
   const availableAwardTypes = awardTypes.filter((t) => t.is_active);
   const selectedAwardType =
     availableAwardTypes.find((t) => t.code === awardType) ||
@@ -151,7 +151,9 @@ const UpsertAward = () => {
             <div className="alert alert-warning mb-0">
               <strong>Cycle Status: {cycle.status}</strong>
               <br />
-              Awards can only be created during an active nomination window (Cycle status: OPEN).
+              {cycle.status === "DRAFT" 
+                ? "Cycle must be OPEN to start creating awards." 
+                : "This cycle is already finalized."}
             </div>
           </CardBody>
         </Card>
@@ -286,7 +288,7 @@ const UpsertAward = () => {
 
             <Col xs={12} className="mt-3 d-flex justify-content-end">
               <AppButton type="submit" loading={saving} disabled={!canCreateAward}>
-                {canCreateAward ? "Create Award" : "Cycle Must Be OPEN"}
+                {canCreateAward ? "Create Award" : "Cannot Create Award"}
               </AppButton>
             </Col>
           </form>

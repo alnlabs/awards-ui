@@ -2,106 +2,91 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Modal, Badge } from "react-bootstrap";
 import toast from "react-hot-toast";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { BiEdit } from "react-icons/bi";
 
 import PageHeader from "../../components/common/PageHeader";
 import { Card, CardBody } from "../../components/common/Card";
 import AppButton from "../../components/common/AppButton";
 import Loading from "../../components/common/Loading";
+import api from "../../services/api";
 import { USER_ROLES } from "../../utils/constants";
-import {
-  fetchCycleById,
-  updateCycle,
-  clearError,
-} from "../../store/slices/cyclesSlice";
+import { formatDate } from "../../utils/dateUtils";
 
 const ViewCycle = () => {
+  // ✅ CORRECT PARAM NAME
   const { cycleId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
   const { user } = useSelector((state) => state.auth);
-  const { currentCycle, loading, error } = useSelector((state) => state.cycles);
+
+  const [cycle, setCycle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [pendingStatus, setPendingStatus] = useState(null); // OPEN | CLOSED
   const [updating, setUpdating] = useState(false);
   const [showEarlyClosureModal, setShowEarlyClosureModal] = useState(false);
-  const [dropCycle, setDropCycle] = useState(false);
 
   /* =====================
      Fetch cycle
   ===================== */
   useEffect(() => {
-    if (!cycleId) return;
+    if (!cycleId) {
+      setError("Invalid cycle id");
+      setLoading(false);
+      return;
+    }
 
-    dispatch(fetchCycleById(cycleId));
+    let mounted = true;
 
-    return () => {
-      dispatch(clearError());
+    const loadCycle = async () => {
+      try {
+        // ✅ api returns BUSINESS DATA directly
+        const data = await api.get(`/cycles/${cycleId}`);
+        if (mounted) setCycle(data);
+      } catch {
+        if (mounted) {
+          setError("Failed to load award cycle");
+          toast.error("Failed to load cycle");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
-  }, [dispatch, cycleId]);
+
+    loadCycle();
+    return () => {
+      mounted = false;
+    };
+  }, [cycleId]);
 
   /* =====================
      Update Status
   ===================== */
-  const handleUpdateStatus = async (shouldDrop = false) => {
-    if (!pendingStatus || !currentCycle) return;
+  const handleUpdateStatus = async (dropCycle = false) => {
+    if (!pendingStatus || !cycle) return;
 
     setUpdating(true);
     try {
-      await dispatch(
-        updateCycle({
-          id: currentCycle.id,
-          data: { 
-            status: pendingStatus,
-            drop_cycle: shouldDrop,
-          },
-        })
-      ).unwrap();
+      await api.patch(`/cycles/${cycle.id}`, {
+        status: pendingStatus,
+        drop_cycle: dropCycle
+      });
 
-      const action = shouldDrop ? "dropped" : pendingStatus.toLowerCase();
-      toast.success(`Cycle ${action} successfully`);
+      toast.success(`Cycle ${pendingStatus.toLowerCase()} successfully`);
+      setCycle((prev) => ({ ...prev, status: pendingStatus }));
       setPendingStatus(null);
       setShowEarlyClosureModal(false);
-      setDropCycle(false);
-      
-      // Refresh cycle data
-      dispatch(fetchCycleById(cycleId));
     } catch (err) {
-      toast.error(err || "Failed to update cycle status");
+      toast.error(err?.error || "Failed to update cycle status");
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleEarlyClosureChoice = async (drop) => {
-    setShowEarlyClosureModal(false);
-    setUpdating(true);
-    
-    try {
-      await dispatch(
-        updateCycle({
-          id: currentCycle.id,
-          data: { 
-            status: "CLOSED",
-            drop_cycle: drop,
-          },
-        })
-      ).unwrap();
-
-      const action = drop ? "dropped" : "closed";
-      toast.success(`Cycle ${action} successfully`);
-      setPendingStatus(null);
-      setDropCycle(false);
-      
-      // Refresh cycle data
-      dispatch(fetchCycleById(cycleId));
-    } catch (err) {
-      toast.error(err || "Failed to update cycle status");
-    } finally {
-      setUpdating(false);
-    }
+  const handleEarlyClosureChoice = (drop) => {
+    setPendingStatus("CLOSED");
+    handleUpdateStatus(drop);
   };
 
   /* =====================
@@ -115,7 +100,7 @@ const ViewCycle = () => {
         <CardBody className="text-center">
           <h5 className="mb-2">{error}</h5>
           <p className="text-muted">
-            The award cycle may not exist or you don't have access.
+            The award cycle may not exist or you don’t have access.
           </p>
           <AppButton onClick={() => navigate("/cycles")}>
             Back to Cycles
@@ -125,7 +110,7 @@ const ViewCycle = () => {
     );
   }
 
-  if (!currentCycle) {
+  if (!cycle) {
     return (
       <Card>
         <CardBody className="text-center">
@@ -137,8 +122,6 @@ const ViewCycle = () => {
       </Card>
     );
   }
-
-  const cycle = currentCycle;
 
   /* =====================
      UI
@@ -161,20 +144,38 @@ const ViewCycle = () => {
               </AppButton>
             )}
 
-            {/* Open cycle */}
+            {/* Activate/Deactivate cycle - only toggle between DRAFT and ACTIVE */}
             {user?.role === USER_ROLES.HR && cycle.status === "DRAFT" && (
               <AppButton
                 variant="success"
-                onClick={() => setPendingStatus("OPEN")}
+                onClick={() => setPendingStatus("ACTIVE")}
               >
-                Open Cycle
+                Activate Cycle
               </AppButton>
+            )}
+            
+            {user?.role === USER_ROLES.HR && cycle.status === "ACTIVE" && (
+              <>
+                <AppButton
+                  variant="outline-secondary"
+                  onClick={() => setPendingStatus("DRAFT")}
+                >
+                  Deactivate Cycle
+                </AppButton>
+                <AppButton
+                  variant="outline-primary"
+                  icon={BiEdit}
+                  onClick={() => navigate(`/cycles/${cycleId}/edit`)}
+                >
+                  Edit Details
+                </AppButton>
+              </>
             )}
 
             {/* Close cycle */}
             {user?.role === USER_ROLES.HR && cycle.status === "OPEN" && (
               <AppButton
-                variant="danger"
+                variant={new Date(cycle.end_date) < new Date().setHours(0,0,0,0) ? "primary" : "danger"}
                 onClick={() => {
                   // Check if closing before end_date
                   const today = new Date();
@@ -191,7 +192,7 @@ const ViewCycle = () => {
                   }
                 }}
               >
-                Close Cycle
+                {new Date(cycle.end_date) < new Date().setHours(0,0,0,0) ? "Finalize & Close Cycle" : "Close Cycle"}
               </AppButton>
             )}
 
@@ -202,6 +203,17 @@ const ViewCycle = () => {
         }
       />
 
+      {cycle.status === "OPEN" && new Date(cycle.end_date) < new Date().setHours(0,0,0,0) && (
+        <Card className="mb-3 border-danger">
+          <CardBody className="bg-danger bg-opacity-10 text-danger">
+            <div className="d-flex align-items-center gap-2">
+              <strong>OVERDUE:</strong>
+              <span>This cycle's period ended on {formatDate(cycle.end_date)}. Please close the cycle to proceed with the final review and awards.</span>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       <Card>
         <CardBody>
           <p>
@@ -209,6 +221,9 @@ const ViewCycle = () => {
             <Badge bg="secondary" className="ms-2">
               {cycle.status}
             </Badge>
+            {cycle.status === "OPEN" && new Date(cycle.end_date) < new Date().setHours(0,0,0,0) && (
+              <Badge bg="danger" className="ms-2">OVERDUE</Badge>
+            )}
           </p>
 
           <p>
@@ -217,8 +232,8 @@ const ViewCycle = () => {
 
           <p>
             <strong>Period:</strong>{" "}
-            {new Date(cycle.start_date).toLocaleDateString()} –{" "}
-            {new Date(cycle.end_date).toLocaleDateString()}
+            {formatDate(cycle.start_date)} –{" "}
+            {formatDate(cycle.end_date)}
           </p>
 
           {cycle.description && (
@@ -294,31 +309,42 @@ const ViewCycle = () => {
       </Modal>
 
       {/* =====================
-         Normal Confirmation Modal
+         Confirmation Modal
       ===================== */}
       <Modal
-        show={!!pendingStatus && !showEarlyClosureModal}
+        show={!!pendingStatus}
         onHide={() => !updating && setPendingStatus(null)}
         backdrop="static"
         centered
       >
         <Modal.Header closeButton={!updating}>
           <Modal.Title>
-            {pendingStatus === "OPEN"
-              ? "Open Award Cycle"
+            {pendingStatus === "ACTIVE"
+              ? "Activate Award Cycle"
               : "Close Award Cycle"}
           </Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-          {pendingStatus === "OPEN" ? (
+          {pendingStatus === "ACTIVE" ? (
             <>
               <p>
-                You are about to <strong>open this award cycle</strong>.
+                You are about to <strong>activate this award cycle</strong>.
               </p>
               <ul>
-                <li>Nominations will be enabled</li>
-                <li>Managers can submit nominations</li>
+                <li>Cycle will be scheduled to open automatically when start date arrives</li>
+                <li>Nominations will be accepted during the configured window</li>
+                <li>You can toggle back to DRAFT anytime before the window opens</li>
+              </ul>
+            </>
+          ) : pendingStatus === "DRAFT" ? (
+            <>
+              <p>
+                You are about to <strong>deactivate this award cycle</strong>.
+              </p>
+              <ul>
+                <li>Cycle will return to DRAFT status</li>
+                <li>It will not open automatically</li>
               </ul>
             </>
           ) : (
@@ -347,11 +373,11 @@ const ViewCycle = () => {
           </AppButton>
 
           <AppButton
-            variant={pendingStatus === "OPEN" ? "success" : "danger"}
+            variant={pendingStatus === "ACTIVE" ? "success" : pendingStatus === "DRAFT" ? "warning" : "danger"}
             loading={updating}
             onClick={() => handleUpdateStatus(false)}
           >
-            Yes, {pendingStatus === "OPEN" ? "Open" : "Close"} Cycle
+            Yes, {pendingStatus === "ACTIVE" ? "Activate" : pendingStatus === "DRAFT" ? "Deactivate" : "Close"} Cycle
           </AppButton>
         </Modal.Footer>
       </Modal>

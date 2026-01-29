@@ -37,11 +37,14 @@ export default function UpsertPanel() {
 
   /**
    * Populate form when panel is loaded
+   * Using queueMicrotask to defer setState and avoid cascading renders
    */
   useEffect(() => {
     if (isEditMode && panel) {
-      setName(panel.name || "");
-      setDescription(panel.description || "");
+      queueMicrotask(() => {
+        setName(panel.name || "");
+        setDescription(panel.description || "");
+      });
     }
   }, [isEditMode, panel]);
 
