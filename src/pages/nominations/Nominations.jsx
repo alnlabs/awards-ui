@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Badge, Table, Form } from "react-bootstrap";
-import styled from "styled-components";
-import { BiPlus, BiListUl, BiUser } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import styled from "styled-components";
 
 import {
   fetchNominations,
   fetchNominationHistory,
+  deleteNomination,
 } from "../../store/slices/nominationsSlice";
 import { fetchCycles } from "../../store/slices/cyclesSlice";
 import { STATUS_COLORS, USER_ROLES } from "../../utils/constants";
@@ -15,12 +16,14 @@ import { formatDate } from "../../utils/dateUtils";
 import Loading from "../../components/common/Loading";
 import PageHeader from "../../components/common/PageHeader";
 import AppButton from "../../components/common/AppButton";
+import ConfirmActionModal from "../../components/common/ConfirmActionModal";
 import {
   Card as StyledCard,
   CardHeader,
   CardTitle,
   CardBody,
 } from "../../components/common/Card";
+import { BiPlus, BiListUl, BiUser, BiTrash } from "react-icons/bi";
 
 /* =====================
    Styled Components
@@ -48,6 +51,7 @@ const Nominations = () => {
   const { cycles = [] } = useSelector((state) => state.cycles);
 
   const [selectedCycleId, setSelectedCycleId] = useState(""); // Filter by cycle
+  const [nominationToDelete, setNominationToDelete] = useState(null);
 
   /* =====================
      FETCH (ROLE AWARE)
@@ -80,6 +84,19 @@ const Nominations = () => {
       }
     }
   }, [cycles, selectedCycleId]);
+
+  const handleDelete = async () => {
+    if (!nominationToDelete) return;
+
+    try {
+      await dispatch(deleteNomination(nominationToDelete.id)).unwrap();
+      toast.success("Nomination deleted successfully");
+    } catch (err) {
+      toast.error(err || "Failed to delete nomination");
+    } finally {
+      setNominationToDelete(null);
+    }
+  };
 
   if (loading) return <Loading />;
 
@@ -214,13 +231,24 @@ const Nominations = () => {
                       <td>{formatDate(n.submitted_at) || "Draft"}</td>
 
                       <td>
-                        <AppButton
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => navigate(`/nominations/${n.id}/view`)}
-                        >
-                          View
-                        </AppButton>
+                        <div className="d-flex gap-2">
+                          <AppButton
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => navigate(`/nominations/${n.id}/view`)}
+                          >
+                            View
+                          </AppButton>
+                          {(user?.role === USER_ROLES.HR || 
+                            (user?.role === USER_ROLES.MANAGER && n.status === "DRAFT")) && (
+                            <AppButton
+                              variant="outline-danger"
+                              size="sm"
+                              icon={BiTrash}
+                              onClick={() => setNominationToDelete(n)}
+                            />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );})}
@@ -229,6 +257,18 @@ const Nominations = () => {
             </TableWrapper>
           </CardBody>
         </StyledCard>
+      )}
+
+      {nominationToDelete && (
+        <ConfirmActionModal
+          title="Delete Nomination?"
+          message={`Are you sure you want to delete the nomination for ${nominationToDelete.nominee?.name || 'this employee'}? This action cannot be undone.`}
+          confirmText="Yes, Delete"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setNominationToDelete(null)}
+        />
       )}
     </>
   );

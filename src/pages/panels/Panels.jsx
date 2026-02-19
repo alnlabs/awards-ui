@@ -32,7 +32,7 @@ export default function Panels() {
   /* =====================
      Role checks
   ===================== */
-  const isHR = user?.role === USER_ROLES.HR;
+  const isHR = user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN;
 
   /* =====================
      Delete Handler

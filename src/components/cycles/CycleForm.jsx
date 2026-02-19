@@ -62,16 +62,18 @@ const CycleForm = ({
     <Form onSubmit={handleSubmit(onSubmit)}>
       <FormGrid>
         <FieldGroup>
-          <Form.Label>Cycle Name</Form.Label>
+          <Form.Label htmlFor="cycle-name">Cycle Name</Form.Label>
           <Form.Control
+            id="cycle-name"
             {...register("name", { required: "Cycle name is required" })}
             isInvalid={!!errors.name}
           />
         </FieldGroup>
 
         <FieldGroup>
-          <Form.Label>Quarter</Form.Label>
+          <Form.Label htmlFor="quarter">Quarter</Form.Label>
           <Form.Select
+            id="quarter"
             {...register("quarter", { required: "Quarter is required" })}
             isInvalid={!!errors.quarter}
           >
@@ -84,24 +86,27 @@ const CycleForm = ({
         </FieldGroup>
 
         <FieldGroup>
-          <Form.Label>Year</Form.Label>
+          <Form.Label htmlFor="year">Year</Form.Label>
           <Form.Control
+            id="year"
             type="number"
             {...register("year", { required: true })}
           />
         </FieldGroup>
 
         <FieldGroup>
-          <Form.Label>Start Date</Form.Label>
+          <Form.Label htmlFor="start-date">Start Date</Form.Label>
           <Form.Control
+            id="start-date"
             type="date"
             {...register("start_date", { required: true })}
           />
         </FieldGroup>
 
         <FieldGroup>
-          <Form.Label>End Date</Form.Label>
+          <Form.Label htmlFor="end-date">End Date</Form.Label>
           <Form.Control
+            id="end-date"
             type="date"
             {...register("end_date", { required: true })}
           />
@@ -109,8 +114,8 @@ const CycleForm = ({
       </FormGrid>
 
       <FieldGroup className="mt-3">
-        <Form.Label>Description</Form.Label>
-        <Form.Control as="textarea" rows={3} {...register("description")} />
+        <Form.Label htmlFor="description">Description</Form.Label>
+        <Form.Control id="description" as="textarea" rows={3} {...register("description")} />
       </FieldGroup>
 
       <Actions>

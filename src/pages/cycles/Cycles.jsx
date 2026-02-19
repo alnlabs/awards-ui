@@ -69,7 +69,7 @@ const Cycles = () => {
         title="Award Cycles"
         subtitle="Manage quarterly award cycles"
         actions={
-          user?.role === USER_ROLES.HR && (
+          (user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && (
             <AppButton icon={BiPlus} onClick={() => navigate("/cycles/new")}>
               New Cycle
             </AppButton>
@@ -125,7 +125,7 @@ const Cycles = () => {
                   )}
 
                   <CardFooterActions>
-                    {user?.role === USER_ROLES.HR && (
+                    {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && (
                       <AppButton
                         variant="outline-primary"
                         size="sm"

@@ -63,18 +63,19 @@ const ViewCycle = () => {
   /* =====================
      Update Status
   ===================== */
-  const handleUpdateStatus = async (dropCycle = false) => {
-    if (!pendingStatus || !cycle) return;
+  const handleUpdateStatus = async (dropCycle = false, statusOverride = null) => {
+    const statusToUse = statusOverride || pendingStatus;
+    if (!statusToUse || !cycle) return;
 
     setUpdating(true);
     try {
       await api.patch(`/cycles/${cycle.id}`, {
-        status: pendingStatus,
+        status: statusToUse,
         drop_cycle: dropCycle
       });
 
-      toast.success(`Cycle ${pendingStatus.toLowerCase()} successfully`);
-      setCycle((prev) => ({ ...prev, status: pendingStatus }));
+      toast.success(`Cycle ${statusToUse.toLowerCase()} successfully`);
+      setCycle((prev) => ({ ...prev, status: statusToUse }));
       setPendingStatus(null);
       setShowEarlyClosureModal(false);
     } catch (err) {
@@ -85,8 +86,7 @@ const ViewCycle = () => {
   };
 
   const handleEarlyClosureChoice = (drop) => {
-    setPendingStatus("CLOSED");
-    handleUpdateStatus(drop);
+    handleUpdateStatus(drop, "CLOSED");
   };
 
   /* =====================
@@ -134,7 +134,7 @@ const ViewCycle = () => {
         actions={
           <>
             {/* Edit (HR + DRAFT only) */}
-            {user?.role === USER_ROLES.HR && cycle.status === "DRAFT" && (
+            {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && cycle.status === "DRAFT" && (
               <AppButton
                 icon={BiEdit}
                 variant="outline-primary"
@@ -145,7 +145,7 @@ const ViewCycle = () => {
             )}
 
             {/* Activate/Deactivate cycle - only toggle between DRAFT and ACTIVE */}
-            {user?.role === USER_ROLES.HR && cycle.status === "DRAFT" && (
+            {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && cycle.status === "DRAFT" && (
               <AppButton
                 variant="success"
                 onClick={() => setPendingStatus("ACTIVE")}
@@ -154,7 +154,7 @@ const ViewCycle = () => {
               </AppButton>
             )}
             
-            {user?.role === USER_ROLES.HR && cycle.status === "ACTIVE" && (
+            {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && cycle.status === "ACTIVE" && (
               <>
                 <AppButton
                   variant="outline-secondary"
@@ -173,7 +173,7 @@ const ViewCycle = () => {
             )}
 
             {/* Close cycle */}
-            {user?.role === USER_ROLES.HR && cycle.status === "OPEN" && (
+            {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && cycle.status === "OPEN" && (
               <AppButton
                 variant={new Date(cycle.end_date) < new Date().setHours(0,0,0,0) ? "primary" : "danger"}
                 onClick={() => {

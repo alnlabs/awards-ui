@@ -67,8 +67,14 @@ const CriteriaList = () => {
             <div>
               <div className="fw-semibold">{c.name}</div>
 
+              {c.category && (
+                <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 me-2 small">
+                  {c.category}
+                </span>
+              )}
+
               {c.description && (
-                <div className="text-muted small">{c.description}</div>
+                <div className="text-muted small d-inline-block">{c.description}</div>
               )}
 
               <div className="mt-1">

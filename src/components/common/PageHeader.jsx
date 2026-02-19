@@ -16,18 +16,24 @@ const HeaderWrapper = styled.div`
 const HeaderLeft = styled.div`
   h1 {
     margin: 0;
-    font-weight: 700;
-    font-size: 1.6rem;
-    color: #212529;
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--text-main);
+    font-family: var(--font-heading);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    letter-spacing: -0.025em;
+
+    svg {
+      color: #6366f1;
+    }
   }
 
   p {
     margin: 0.25rem 0 0;
-    font-size: 0.9rem;
-    color: #6c757d;
+    font-size: 1rem;
+    color: var(--text-muted);
   }
 `;
 
