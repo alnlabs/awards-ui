@@ -95,6 +95,21 @@ export const submitPanelReview = createAsyncThunk(
 );
 
 /* =========================
+   DELETE NOMINATION
+========================= */
+export const deleteNomination = createAsyncThunk(
+  "nominations/deleteNomination",
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/nominations/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(error?.error || "Failed to delete nomination");
+    }
+  }
+);
+
+/* =========================
    SLICE
 ========================= */
 const nominationsSlice = createSlice({
@@ -160,6 +175,15 @@ const nominationsSlice = createSlice({
 
         if (state.currentNomination?.id === action.payload.id) {
           state.currentNomination = action.payload;
+        }
+      })
+
+      /* ---------- DELETE ---------- */
+      .addCase(deleteNomination.fulfilled, (state, action) => {
+        state.nominations = state.nominations.filter((n) => n.id !== action.payload);
+        state.history = state.history.filter((n) => n.id !== action.payload);
+        if (state.currentNomination?.id === action.payload) {
+          state.currentNomination = null;
         }
       });
   },

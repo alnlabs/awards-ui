@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { BiPlus, BiEdit, BiCloudUpload, BiFile, BiCheckCircle } from "react-icons/bi";
 
 import PageHeader from "../../components/common/PageHeader";
 import { Card, CardBody } from "../../components/common/Card";
 import AppButton from "../../components/common/AppButton";
 import Loading from "../../components/common/Loading";
 import api from "../../services/api";
+import { BASE_URL } from "../../config/api";
 
 /* =====================
    Initial State
@@ -39,7 +41,7 @@ const UpsertNomination = () => {
       .then((res) => {
         // ✅ api service returns data directly, not res.data
         const cycles = Array.isArray(res) ? res : [];
-        const active = cycles.find((c) => c.status === "ACTIVE");
+        const active = cycles.find((c) => c.status === "ACTIVE" || c.status === "OPEN");
         if (!active) {
           toast.error("No active cycle available");
           navigate("/nominations");
@@ -80,8 +82,8 @@ const UpsertNomination = () => {
   ===================== */
   useEffect(() => {
     api
-      .get("/forms/active/render")
-      .then((res) => setCriteria(res.data))
+      .get("/forms/active")
+      .then((res) => setCriteria(res))
       .catch(() => {
         toast.error("No active criteria configured");
         navigate("/nominations");
@@ -100,16 +102,16 @@ const UpsertNomination = () => {
     api
       .get(`/nominations/${id}`)
       .then((res) => {
-        if (res.data.status !== "DRAFT") {
+        if (res.status !== "DRAFT") {
           toast.error("Only draft nominations can be edited");
           navigate("/nominations");
           return;
         }
 
         setValues({
-          cycle_id: res.data.cycle_id,
-          nominee_id: res.data.nominee_id,
-          answers: res.data.answers || [],
+          cycle_id: res.cycle_id,
+          nominee_id: res.nominee_id,
+          answers: res.answers || [],
         });
       })
       .catch(() => {
@@ -138,6 +140,42 @@ const UpsertNomination = () => {
       };
     });
   };
+
+  const handleFileUpload = async (field_key, file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const toastId = toast.loading("Uploading attachment...");
+    try {
+      const res = await api.post("/nominations/upload-attachment", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      
+      const fileUrl = res.data.url;
+      
+      setValues((prev) => {
+        const exists = prev.answers.some((a) => a.field_key === field_key);
+        return {
+          ...prev,
+          answers: exists
+            ? prev.answers.map((a) =>
+                a.field_key === field_key ? { ...a, attachment: fileUrl } : a
+              )
+            : [...prev.answers, { field_key, value: "", attachment: fileUrl }],
+        };
+      });
+      
+      toast.success("File uploaded", { id: toastId });
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast.error("Upload failed", { id: toastId });
+    }
+  };
+
+  const getAttachment = (field_key) =>
+    values.answers.find((a) => a.field_key === field_key)?.attachment ?? null;
 
   const hasMissingRequired = () => {
     if (!criteria?.fields) return false;
@@ -170,6 +208,7 @@ const UpsertNomination = () => {
     try {
       await api.post("/nominations", {
         cycle_id: values.cycle_id,
+        form_id: criteria.form_id,
         nominee_id: values.nominee_id,
         answers: values.answers,
         status,
@@ -325,6 +364,41 @@ const UpsertNomination = () => {
                         </option>
                       ))}
                     </select>
+                  )}
+
+                  {/* FILE UPLOAD (OPTIONAL) */}
+                  {field.allow_file_upload && (
+                    <div className="mt-2 p-2 border rounded bg-light bg-opacity-50">
+                      <div className="d-flex align-items-center justify-content-between">
+                        <div className="small text-muted d-flex align-items-center">
+                          <BiCloudUpload className="me-1 fs-5" />
+                          Supporting Attachment (Optional)
+                        </div>
+                        {getAttachment(field.field_key) && (
+                          <div className="small text-success d-flex align-items-center">
+                            <BiCheckCircle className="me-1" />
+                            File Uploaded
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-1 d-flex gap-2 align-items-center">
+                        <input
+                          type="file"
+                          className="form-control form-control-sm"
+                          onChange={(e) => handleFileUpload(field.field_key, e.target.files[0])}
+                        />
+                        {getAttachment(field.field_key) && (
+                          <a 
+                            href={`${BASE_URL}${getAttachment(field.field_key)}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="btn btn-sm btn-outline-secondary"
+                          >
+                            View
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               );

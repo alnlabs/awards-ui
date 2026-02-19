@@ -67,13 +67,22 @@ const ViewAward = () => {
         title="Award Recognition"
         subtitle="Celebrating outstanding achievements"
         actions={
-          <AppButton
-            variant="secondary"
-            icon={BiArrowBack}
-            onClick={() => navigate("/awards")}
-          >
-            Back to Gallery
-          </AppButton>
+          <div className="d-flex gap-2">
+            <AppButton
+              variant="primary"
+              icon={BiAward}
+              onClick={() => navigate(`/awards/${awardId}/certificate`)}
+            >
+              View Certificate
+            </AppButton>
+            <AppButton
+              variant="secondary"
+              icon={BiArrowBack}
+              onClick={() => navigate("/awards")}
+            >
+              Back to Gallery
+            </AppButton>
+          </div>
         }
       />
 

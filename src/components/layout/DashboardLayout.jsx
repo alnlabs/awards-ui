@@ -24,21 +24,39 @@ import { USER_ROLES } from "../../utils/constants";
 const NAVBAR_HEIGHT = 56;
 const SIDEBAR_WIDTH = 260;
 
+import { Nav } from "react-bootstrap";
+import { Link } from "react-router-dom";
+
 /* =====================
    Styled Components
 ===================== */
 
 const StyledNavbar = styled(Navbar)`
   height: ${NAVBAR_HEIGHT}px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 
   .navbar-brand {
-    font-weight: 700;
-    font-size: 1.4rem;
-    color: white !important;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--text-main) !important;
     display: flex;
     align-items: center;
+    font-family: var(--font-heading);
+    letter-spacing: -0.025em;
+
+    svg {
+      color: #6366f1;
+    }
+  }
+
+  .nav-link, .dropdown-toggle {
+    color: var(--text-main) !important;
+    font-weight: 600;
+    font-size: 0.95rem;
   }
 `;
 
@@ -48,50 +66,59 @@ const Sidebar = styled.aside`
   left: 0;
   height: calc(100vh - ${NAVBAR_HEIGHT}px);
   width: ${SIDEBAR_WIDTH}px;
-  background: #f8f9fa;
-  border-right: 1px solid #dee2e6;
-  padding: 1rem 0.75rem;
+  background: white;
+  border-right: 1px solid #f1f5f9;
+  padding: 1.5rem 1rem;
   overflow-y: auto;
   z-index: 1000;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (max-width: 768px) {
     transform: ${(props) =>
       props.open ? "translateX(0)" : "translateX(-100%)"};
+    box-shadow: ${(props) =>
+      props.open ? "20px 0 40px rgba(0,0,0,0.1)" : "none"};
   }
 `;
 
-const SidebarItem = styled.div`
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.35rem;
-  border-radius: 10px;
+const SidebarItem = styled(Nav.Link)`
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  transition: all 0.2s ease;
+  gap: 0.875rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
+  font-weight: 600;
 
-  color: ${(props) => (props.active ? "#4c5fd7" : "#495057")};
-  background: ${(props) => (props.active ? "#e7e9fd" : "transparent")};
-  font-weight: ${(props) => (props.active ? "600" : "400")};
+  color: ${(props) => (props.active ? "#6366f1" : "var(--text-muted)")} !important;
+  background: ${(props) => (props.active ? "rgba(99, 102, 241, 0.08)" : "transparent")};
 
   &:hover {
-    background: #e9ecef;
+    background: ${(props) => (props.active ? "rgba(99, 102, 241, 0.12)" : "#f8fafc")};
+    color: ${(props) => (props.active ? "#4f46e5" : "var(--text-main)")} !important;
     transform: translateX(4px);
   }
 
   svg {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
+    transition: transform 0.2s;
+  }
+
+  &:hover svg {
+    transform: scale(1.1);
   }
 `;
 
 const MainContent = styled.main`
-  padding-top: ${NAVBAR_HEIGHT + 16}px;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  padding-bottom: 2rem;
+  padding-top: ${NAVBAR_HEIGHT + 24}px;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+  padding-bottom: 3rem;
   min-height: calc(100vh - ${NAVBAR_HEIGHT}px);
+  background: #f8fafc;
   margin-left: 0;
 
   @media (min-width: 769px) {
@@ -99,8 +126,8 @@ const MainContent = styled.main`
   }
 
   @media (max-width: 768px) {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
 `;
 
@@ -147,6 +174,7 @@ const DashboardLayout = ({ children }) => {
       icon: BiHome,
       roles: [
         USER_ROLES.HR,
+        USER_ROLES.SUPER_ADMIN,
         USER_ROLES.MANAGER,
         USER_ROLES.EMPLOYEE,
         USER_ROLES.PANEL,
@@ -156,13 +184,13 @@ const DashboardLayout = ({ children }) => {
       path: "/cycles",
       label: "Cycles",
       icon: BiBook,
-      roles: [USER_ROLES.HR, USER_ROLES.MANAGER],
+      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN, USER_ROLES.MANAGER],
     },
     {
       path: "/panels",
       label: "Panels",
       icon: BiGroup,
-      roles: [USER_ROLES.HR],
+      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN],
     },
     {
       path: "/reviews", // ✅ FIXED
@@ -174,25 +202,25 @@ const DashboardLayout = ({ children }) => {
       path: "/nominations",
       label: "Nominations",
       icon: BiListUl,
-      roles: [USER_ROLES.HR, USER_ROLES.MANAGER],
+      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN, USER_ROLES.MANAGER],
     },
     {
       path: "/awards",
       label: "Awards",
       icon: BiTrophy,
-      roles: [USER_ROLES.HR, USER_ROLES.EMPLOYEE],
+      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN, USER_ROLES.EMPLOYEE],
     },
     {
       path: "/users",
       label: "Users",
       icon: BiUser,
-      roles: [USER_ROLES.HR],
+      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN],
     },
     {
       path: "/criteria",
       label: "Criteria",
       icon: BiListUl,
-      roles: [USER_ROLES.HR],
+      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN],
     },
   ];
 
@@ -206,38 +234,51 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <>
-      <StyledNavbar fixed="top" variant="dark">
+      <StyledNavbar fixed="top" variant="light">
         <Container fluid>
           <Navbar.Brand>
-            <BiTrophy style={{ marginRight: "0.5rem" }} />
-            Employee Awards
+            <BiTrophy style={{ marginRight: "0.75rem" }} />
+            Awards Portal
           </Navbar.Brand>
 
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2">
             <NavDropdown
-              title={user?.name || "User"}
+              title={
+                <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>
+                  {user?.name || "User"}
+                </span>
+              }
               align="end"
               menuVariant="light"
             >
-              <NavDropdown.Item onClick={() => navigate("/profile")}>
-                <BiUser className="me-2" />
+              <NavDropdown.Item onClick={() => navigate("/profile")} className="py-2">
+                <BiUser className="me-2 text-primary" />
                 Profile
               </NavDropdown.Item>
               <NavDropdown.Divider />
-              <NavDropdown.Item onClick={handleLogout}>
+              <NavDropdown.Item onClick={handleLogout} className="py-2 text-danger">
                 <BiLogOut className="me-2" />
                 Logout
               </NavDropdown.Item>
             </NavDropdown>
 
-            <BiMenu
+            <div 
               style={{
-                fontSize: "1.6rem",
-                cursor: "pointer",
-                color: "white",
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                background: '#f1f5f9',
+                transition: 'background 0.2s'
               }}
+              className="d-md-none"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-            />
+            >
+              <BiMenu style={{ fontSize: "1.4rem", color: "var(--text-main)" }} />
+            </div>
           </div>
         </Container>
       </StyledNavbar>
@@ -254,14 +295,15 @@ const DashboardLayout = ({ children }) => {
           return (
             <SidebarItem
               key={item.path}
+              as={Link}
+              to={item.path}
               active={isActive}
               onClick={() => {
-                navigate(item.path);
                 setSidebarOpen(false);
               }}
             >
-              <Icon />
-              {item.label}
+              <Icon size={20} />
+              <span>{item.label}</span>
             </SidebarItem>
           );
         })}

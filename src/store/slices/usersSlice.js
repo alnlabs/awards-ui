@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
+import toast from "react-hot-toast";
 
 /* =====================
    THUNKS
@@ -13,7 +14,7 @@ export const fetchUsers = createAsyncThunk(
       const url = params ? `/users?${params}` : "/users";
       const response = await api.get(url);
       // API returns paginated response: { items: [], total, skip, limit }
-      return response?.items || [];
+      return response;
     } catch (error) {
       return rejectWithValue(
         error?.error || error?.message || "Failed to fetch users"
@@ -79,14 +80,15 @@ export const bulkDeleteUsers = createAsyncThunk(
   "users/bulkDeleteUsers",
   async (userIds, { rejectWithValue }) => {
     try {
-      await api.post("/users/bulk-delete", {
+      const response = await api.post("/users/bulk-delete", {
         user_ids: userIds,
       });
-      return userIds;
+      // Return the response data to be used in the fulfilled case
+      return response;
     } catch (error) {
-      return rejectWithValue(
-        error?.error || error?.message || "Failed to bulk delete users"
-      );
+      const errorMsg = error?.error || error?.message || "Failed to bulk delete users";
+      toast.error(errorMsg);
+      return rejectWithValue(errorMsg);
     }
   }
 );
@@ -99,6 +101,7 @@ const usersSlice = createSlice({
   name: "users",
   initialState: {
     users: [],
+    totalCount: 0,
     currentUser: null,
     loading: false,
     error: null,
@@ -121,7 +124,9 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = Array.isArray(action.payload) ? action.payload : [];
+        // API returns { items: [], total, skip, limit }
+        state.users = Array.isArray(action.payload.items) ? action.payload.items : [];
+        state.totalCount = action.payload.total || 0;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
@@ -160,7 +165,13 @@ const usersSlice = createSlice({
       })
       .addCase(bulkDeleteUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = state.users.filter((u) => !action.payload.includes(u.id));
+        const response = action.payload;
+
+        // Show the appropriate message from the backend
+        toast.success(response.message);
+
+        // Refresh the user list by triggering a re-fetch
+        // The actual user removal will happen in the component after navigation
       })
       .addCase(bulkDeleteUsers.rejected, (state, action) => {
         state.loading = false;

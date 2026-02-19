@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { BiUser, BiUpload, BiDownload } from "react-icons/bi";
+import { Modal, Table, Alert } from "react-bootstrap";
+import { BiUser, BiUpload, BiDownload, BiCheckCircle, BiErrorCircle } from "react-icons/bi";
 import toast from "react-hot-toast";
 
 import PageHeader from "../../components/common/PageHeader";
@@ -17,7 +18,7 @@ import {
   clearCurrentUser,
 } from "../../store/slices/usersSlice";
 
-import api from "../../services/api"; // ✅ only for BULK upload
+import { apiFileUpload } from "../../services/api"; // ✅ for BULK upload
 import { USER_ROLES } from "../../utils/constants";
 
 import FormInput from "../../components/form/FormInput";
@@ -69,6 +70,7 @@ const UpsertUser = () => {
   const fileInputRef = useRef(null);
 
   const { currentUser, loading } = useSelector((state) => state.users);
+  const { user: authUser } = useSelector((state) => state.auth);
 
   const {
     register,
@@ -89,6 +91,11 @@ const UpsertUser = () => {
   });
 
   const [bulkUploading, setBulkUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  
+  /* ✅ NEW: Bulk result tracking */
+  const [bulkResult, setBulkResult] = useState(null);
+  const [showResultModal, setShowResultModal] = useState(false);
 
   /* =====================
      FETCH USER (EDIT MODE)
@@ -124,22 +131,54 @@ const UpsertUser = () => {
      BULK UPLOAD
   ===================== */
   const handleBulkUpload = async () => {
-    const file = fileInputRef.current?.files?.[0];
+    const file = selectedFile;
     if (!file) return toast.error("Please select a file");
+
+    // Validate file type
+    const validTypes = ['text/csv', 'application/json', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+    const validExtensions = ['.csv', '.json', '.xlsx', '.xls'];
+    
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+      return toast.error("Please upload a valid file (CSV, JSON, or Excel)");
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return toast.error("File size exceeds 10MB limit");
+    }
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       setBulkUploading(true);
-      await api.post("/users/bulk-upload", formData);
-      toast.success("Bulk upload completed");
-      navigate("/users");
-    } catch {
-      toast.error("Bulk upload failed");
+      // Use dedicated file upload API instance
+      const response = await apiFileUpload.post("/users/bulk-upload", formData);
+      
+      setBulkResult(response);
+      setShowResultModal(true);
+      
+      if (response.created > 0 && (!response.failed || response.failed.length === 0)) {
+        toast.success(`Successfully uploaded ${response.created} users`);
+      } else if (response.created > 0) {
+        toast.success(`Uploaded ${response.created} users with some errors`);
+      } else {
+        toast.error("No users were created. Check the errors.");
+      }
+      
+    } catch (error) {
+      console.error('Bulk upload error:', error);
+      toast.error(error?.error || error?.message || "Bulk upload failed");
     } finally {
       setBulkUploading(false);
-      fileInputRef.current.value = "";
+      // Clear file selection after successful upload
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setSelectedFile(null);
     }
   };
 
@@ -213,12 +252,44 @@ const UpsertUser = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,.xlsx,.json"
+                accept=".csv,.xlsx,.json,.xls"
                 className="form-control"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSelectedFile(file);
+                    // Show file info
+                    const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                    toast(`Selected file: ${file.name} (${fileSize} MB)`, {
+                      icon: '📄',
+                      duration: 3000,
+                    });
+                  } else {
+                    setSelectedFile(null);
+                  }
+                }}
               />
-              <AppButton loading={bulkUploading} onClick={handleBulkUpload}>
-                Upload
+              <AppButton 
+                loading={bulkUploading} 
+                onClick={handleBulkUpload}
+                disabled={!selectedFile || bulkUploading}
+              >
+                {bulkUploading ? "Uploading..." : "Upload"}
               </AppButton>
+              <button 
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                    setSelectedFile(null);
+                    toast.success("File selection cleared");
+                  }
+                }}
+                disabled={!selectedFile || bulkUploading}
+              >
+                Clear
+              </button>
             </div>
 
             <div className="d-flex gap-2">
@@ -283,7 +354,13 @@ const UpsertUser = () => {
                 { label: "Employee", value: USER_ROLES.EMPLOYEE },
                 { label: "Manager", value: USER_ROLES.MANAGER },
                 { label: "Panel", value: USER_ROLES.PANEL },
-                { label: "HR (Admin)", value: USER_ROLES.HR },
+                // Only SUPER_ADMIN can assign HR or SUPER_ADMIN roles
+                ...(authUser?.role === USER_ROLES.SUPER_ADMIN
+                  ? [
+                      { label: "HR (Admin)", value: USER_ROLES.HR },
+                      { label: "Super Admin", value: USER_ROLES.SUPER_ADMIN },
+                    ]
+                  : []),
               ]}
             />
 
@@ -324,6 +401,75 @@ const UpsertUser = () => {
           </form>
         </CardBody>
       </Card>
+      {/* Bulk Result Modal */}
+      <Modal 
+        show={showResultModal} 
+        onHide={() => {
+          setShowResultModal(false);
+          if (bulkResult?.created > 0) navigate("/users");
+        }}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Bulk Upload Summary</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="d-flex gap-4 mb-4">
+            <div className="flex-grow-1 p-3 bg-light rounded text-center">
+              <div className="display-6 fw-bold text-success">{bulkResult?.created || 0}</div>
+              <div className="text-muted small text-uppercase fw-bold">Created</div>
+            </div>
+            <div className="flex-grow-1 p-3 bg-light rounded text-center">
+              <div className="display-6 fw-bold text-danger">{bulkResult?.failed?.length || 0}</div>
+              <div className="text-muted small text-uppercase fw-bold">Failed</div>
+            </div>
+          </div>
+
+          {bulkResult?.failed && bulkResult.failed.length > 0 && (
+            <>
+              <h6 className="fw-bold mb-3">Error Details</h6>
+              <div className="table-responsive" style={{ maxHeight: '300px' }}>
+                <Table striped bordered hover size="sm">
+                  <thead className="sticky-top bg-white">
+                    <tr>
+                      <th>Row</th>
+                      <th>Email/Name</th>
+                      <th>Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkResult.failed.map((f, i) => (
+                      <tr key={i}>
+                        <td>{f.row}</td>
+                        <td className="small">{f.record?.email || f.record?.name || 'N/A'}</td>
+                        <td className="text-danger small">{typeof f.error === 'string' ? f.error : JSON.stringify(f.error)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </>
+          )}
+
+          {bulkResult?.created > 0 && bulkResult?.failed?.length === 0 && (
+            <Alert variant="success" className="d-flex align-items-center gap-2 m-0">
+              <BiCheckCircle className="fs-4" />
+              All records were successfully processed!
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <AppButton 
+            onClick={() => {
+              setShowResultModal(false);
+              if (bulkResult?.created > 0) navigate("/users");
+            }}
+          >
+            {bulkResult?.created > 0 ? "Go to User List" : "Close"}
+          </AppButton>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

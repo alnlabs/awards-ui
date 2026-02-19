@@ -200,7 +200,7 @@ const Awards = () => {
   useEffect(() => {
     dispatch(fetchCycles()); // Fetch cycles first to set activeCycle
     dispatch(fetchCurrentAwards());
-    if (user?.role === USER_ROLES.HR) {
+    if (user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) {
       dispatch(fetchAwardTypes());
     }
   }, [dispatch, user]);
@@ -306,9 +306,9 @@ const Awards = () => {
 
   if (loading) return <Loading />;
 
-  // Separate finalized nominations (can create awards) from those that already have awards
+  // Separate finalized or under-review nominations
   const finalizedNominations = nominationsWithScores.filter(
-    (n) => n.status === "FINALIZED"
+    (n) => ["FINALIZED", "HR_REVIEW"].includes(n.status)
   );
 
   // Filter and sort nominations
@@ -397,10 +397,21 @@ const Awards = () => {
                           </Badge>
                         </div>
 
-                        <div className="border-top pt-3 mt-2">
+                        <div className="border-top pt-3 mt-2 d-flex justify-content-between align-items-center">
                           <p className="small text-muted mb-0">
-                            Recognized on {new Date(award.created_at).toLocaleDateString()}
+                            {new Date(award.created_at).toLocaleDateString()}
                           </p>
+                          <AppButton 
+                            size="sm" 
+                            variant="primary" 
+                            className="py-1 px-3"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/awards/${award.id}/certificate`);
+                            }}
+                          >
+                            Certificate
+                          </AppButton>
                         </div>
                       </CardBody>
                     </WinnerCard>
@@ -410,7 +421,7 @@ const Awards = () => {
           )}
         </Tab>
 
-        {user?.role === USER_ROLES.HR && (
+        {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && (
           <Tab
             eventKey="nominations"
             title={
@@ -458,6 +469,7 @@ const Awards = () => {
                         <th className="border-0">Nominee</th>
                         <th className="border-0 text-center">Avg Score</th>
                         <th className="border-0 text-center">Reviews</th>
+                        <th className="border-0 text-center">Status</th>
                         <th className="border-0 text-end">Action</th>
                       </tr>
                     </thead>
@@ -485,7 +497,23 @@ const Awards = () => {
                             </Badge>
                           </td>
                           <td className="text-center">{n.review_count}</td>
-                          <td className="text-end">
+                          <td className="text-center">
+                            <Badge bg={n.status === "FINALIZED" ? "success" : "warning"} className="small px-2 py-1">
+                              {n.status.replace(/_/g, ' ')}
+                            </Badge>
+                          </td>
+                          <td className="text-end d-flex justify-content-end gap-2">
+                            <AppButton
+                              size="sm"
+                              variant="outline-secondary"
+                              onClick={() =>
+                                navigate(
+                                  `/awards/preview?nominationId=${n.nomination_id}`
+                                )
+                              }
+                            >
+                              Preview
+                            </AppButton>
                             <AppButton
                               size="sm"
                               variant="outline-primary"
@@ -510,7 +538,7 @@ const Awards = () => {
           </Tab>
         )}
 
-        {user?.role === USER_ROLES.HR && (
+        {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && (
           <Tab
             eventKey="types"
             title={

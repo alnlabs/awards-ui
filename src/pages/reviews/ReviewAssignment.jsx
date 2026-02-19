@@ -10,6 +10,7 @@ import Loading from "../../components/common/Loading";
 import AppButton from "../../components/common/AppButton";
 
 import { submitTaskReview } from "../../store/slices/panelAssignmentsSlice";
+import { BASE_URL } from "../../config/api";
 
 export default function ReviewAssignment() {
   const { assignmentId } = useParams();
@@ -80,6 +81,37 @@ export default function ReviewAssignment() {
           </AppButton>
         }
       />
+
+      {/* ================= NOMINATION BASIS ================= */}
+      <Card className="mb-4">
+        <h6 className="mb-3">Nomination Basis</h6>
+        {assignment.nomination.answers && assignment.nomination.answers.length > 0 ? (
+          <div className="row g-3">
+            {assignment.nomination.answers.map((ans, idx) => (
+              <div key={idx} className="col-12 border-bottom pb-2 mb-2">
+                <div className="small text-muted fw-bold">{ans.field_key.replace(/_/g, ' ').toUpperCase()}</div>
+                <div className="mt-1">{ans.value}</div>
+                {ans.attachment && (
+                  <div className="mt-2">
+                    <a 
+                      href={`${BASE_URL}${ans.attachment}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="btn btn-sm btn-outline-primary py-0 px-2 small"
+                    >
+                      View Supporting Document
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted mb-0 small">No responses available for this nomination.</p>
+        )}
+      </Card>
+
+      <h6 className="mb-3">Review & Score</h6>
 
       {assignment.tasks.map((task) => (
         <Card key={task.task_id} className="mb-3">

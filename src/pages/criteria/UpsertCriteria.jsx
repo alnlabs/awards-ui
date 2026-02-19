@@ -32,6 +32,7 @@ const generateFieldKey = (label) =>
 const EMPTY_CRITERIA = {
   name: "",
   description: "",
+  category: "",
   fields: [],
 };
 
@@ -44,7 +45,9 @@ const EMPTY_FIELD = {
   options: [],
   ui_schema: null,
   validation: null,
+  allow_file_upload: false,
   _keyEdited: false, // UI only
+  _optionsRaw: "",   // UI only for better input handling
 };
 
 /* =====================
@@ -84,9 +87,11 @@ const UpsertCriteria = () => {
     setValues({
       name: current.name,
       description: current.description || "",
+      category: current.category || "",
       fields: (current.fields || []).map((f) => ({
         ...f,
         options: f.options ? Object.values(f.options) : [],
+        _optionsRaw: f.options ? Object.values(f.options).join(", ") : "",
         _keyEdited: true,
       })),
     });
@@ -129,6 +134,7 @@ const UpsertCriteria = () => {
     const updated = [...values.fields];
     updated[index] = {
       ...updated[index],
+      _optionsRaw: value,
       options: value
         .split(",")
         .map((v) => v.trim())
@@ -176,7 +182,11 @@ const UpsertCriteria = () => {
       const payload = {
         name: values.name,
         description: values.description,
-        fields: values.fields.map(({ _keyEdited: _unused, ...field }) => {
+        category: values.category,
+        fields: values.fields.map((f) => {
+          const field = { ...f };
+          delete field._keyEdited;
+          delete field._optionsRaw;
           if (field.field_type === "SELECT") {
             const options = {};
             field.options.forEach((o) => (options[o] = o));
@@ -232,6 +242,18 @@ const UpsertCriteria = () => {
                 value={values.name}
                 onChange={handleChange}
                 required
+              />
+            </div>
+
+            {/* Category */}
+            <div className="col-md-6">
+              <label className="form-label">Category (Optional)</label>
+              <input
+                name="category"
+                className="form-control"
+                value={values.category}
+                onChange={handleChange}
+                placeholder="e.g., Star Performer, Innovation"
               />
             </div>
 
@@ -308,12 +330,24 @@ const UpsertCriteria = () => {
                     Required
                   </div>
 
+                  <div className="col-md-2 d-flex align-items-center">
+                    <input
+                      type="checkbox"
+                      className="form-check-input me-2"
+                      checked={field.allow_file_upload}
+                      onChange={(e) =>
+                        handleFieldChange(idx, "allow_file_upload", e.target.checked)
+                      }
+                    />
+                    Allow File
+                  </div>
+
                   {field.field_type === "SELECT" && (
                     <div className="col-12">
                       <input
                         className="form-control"
                         placeholder="Options (comma separated)"
-                        value={field.options.join(", ")}
+                        value={field._optionsRaw}
                         onChange={(e) =>
                           handleOptionsChange(idx, e.target.value)
                         }

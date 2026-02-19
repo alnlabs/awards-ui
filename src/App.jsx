@@ -24,7 +24,7 @@ import "./App.css";
    Core Pages
 ===================== */
 import { Cycles, UpsertCycle, ViewCycle } from "./pages/cycles";
-import { Awards, UpsertAward, ViewAward } from "./pages/awards";
+import { Awards, UpsertAward, ViewAward, AwardCertificate } from "./pages/awards";
 import { UpsertUser, Users } from "./pages/users";
 
 /* =====================
@@ -87,7 +87,7 @@ function App() {
           <Route
             path="/criteria"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <CriteriaList />
                 </DashboardLayout>
@@ -97,7 +97,7 @@ function App() {
           <Route
             path="/criteria/new"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertCriteria />
                 </DashboardLayout>
@@ -107,7 +107,7 @@ function App() {
           <Route
             path="/criteria/:criteriaId/edit"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertCriteria />
                 </DashboardLayout>
@@ -117,7 +117,7 @@ function App() {
           <Route
             path="/criteria/:criteriaId/view"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <RenderCriteria />
                 </DashboardLayout>
@@ -130,7 +130,7 @@ function App() {
             path="/cycles"
             element={
               <ProtectedRoute
-                allowedRoles={[USER_ROLES.HR, USER_ROLES.MANAGER]}
+                allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN, USER_ROLES.MANAGER]}
               >
                 <DashboardLayout>
                   <Cycles />
@@ -141,7 +141,7 @@ function App() {
           <Route
             path="/cycles/new"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertCycle />
                 </DashboardLayout>
@@ -151,7 +151,7 @@ function App() {
           <Route
             path="/cycles/:cycleId/edit"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertCycle />
                 </DashboardLayout>
@@ -164,6 +164,7 @@ function App() {
               <ProtectedRoute
                 allowedRoles={[
                   USER_ROLES.HR,
+                  USER_ROLES.SUPER_ADMIN,
                   USER_ROLES.MANAGER,
                   USER_ROLES.PANEL,
                 ]}
@@ -182,6 +183,7 @@ function App() {
               <ProtectedRoute
                 allowedRoles={[
                   USER_ROLES.HR,
+                  USER_ROLES.SUPER_ADMIN,
                   USER_ROLES.MANAGER,
                   USER_ROLES.PANEL,
                 ]}
@@ -195,7 +197,7 @@ function App() {
           <Route
             path="/nominations/new"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.MANAGER]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.MANAGER, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertNomination />
                 </DashboardLayout>
@@ -208,6 +210,7 @@ function App() {
               <ProtectedRoute
                 allowedRoles={[
                   USER_ROLES.HR,
+                  USER_ROLES.SUPER_ADMIN,
                   USER_ROLES.MANAGER,
                   USER_ROLES.PANEL,
                 ]}
@@ -221,7 +224,7 @@ function App() {
           <Route
             path="/nominations/:nominationId/edit"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.MANAGER]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.MANAGER, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertNomination />
                 </DashboardLayout>
@@ -233,7 +236,7 @@ function App() {
           <Route
             path="/panels"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <Panels />
                 </DashboardLayout>
@@ -243,7 +246,7 @@ function App() {
           <Route
             path="/panels/new"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertPanel />
                 </DashboardLayout>
@@ -253,7 +256,7 @@ function App() {
           <Route
             path="/panels/:panelId/edit"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertPanel />
                 </DashboardLayout>
@@ -263,7 +266,7 @@ function App() {
           <Route
             path="/panels/:panelId"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <ViewPanel />
                 </DashboardLayout>
@@ -299,7 +302,7 @@ function App() {
           <Route
             path="/reviews/:assignmentId/summary"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <AssignmentSummary />
                 </DashboardLayout>
@@ -310,7 +313,7 @@ function App() {
           <Route
             path="/reviews/:assignmentId/all"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <AssignmentReviews />
                 </DashboardLayout>
@@ -332,7 +335,7 @@ function App() {
           <Route
             path="/awards/new"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertAward />
                 </DashboardLayout>
@@ -349,12 +352,28 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/awards/:id/certificate"
+            element={
+              <ProtectedRoute>
+                <AwardCertificate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/awards/preview"
+            element={
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
+                <AwardCertificate isPreview />
+              </ProtectedRoute>
+            }
+          />
 
           {/* ========= USERS ========= */}
           <Route
             path="/users"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <Users />
                 </DashboardLayout>
@@ -365,7 +384,7 @@ function App() {
           <Route
             path="/users/new"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertUser />
                 </DashboardLayout>
@@ -376,7 +395,7 @@ function App() {
           <Route
             path="/users/:userId/edit"
             element={
-              <ProtectedRoute allowedRoles={[USER_ROLES.HR]}>
+              <ProtectedRoute allowedRoles={[USER_ROLES.HR, USER_ROLES.SUPER_ADMIN]}>
                 <DashboardLayout>
                   <UpsertUser />
                 </DashboardLayout>

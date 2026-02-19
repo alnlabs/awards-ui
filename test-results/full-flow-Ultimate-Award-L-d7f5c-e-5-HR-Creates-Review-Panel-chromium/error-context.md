@@ -1,0 +1,54 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e6]
+        - text: Awards Portal
+      - button "HR Admin" [ref=e10] [cursor=pointer]
+  - complementary [ref=e11]:
+    - link "Dashboard" [ref=e12] [cursor=pointer]:
+      - /url: /dashboard
+      - img [ref=e13]
+      - generic [ref=e15]: Dashboard
+    - link "Cycles" [ref=e16] [cursor=pointer]:
+      - /url: /cycles
+      - img [ref=e17]
+      - generic [ref=e20]: Cycles
+    - link "Panels" [ref=e21] [cursor=pointer]:
+      - /url: /panels
+      - img [ref=e22]
+      - generic [ref=e25]: Panels
+    - link "Nominations" [ref=e26] [cursor=pointer]:
+      - /url: /nominations
+      - img [ref=e27]
+      - generic [ref=e29]: Nominations
+    - link "Awards" [ref=e30] [cursor=pointer]:
+      - /url: /awards
+      - img [ref=e31]
+      - generic [ref=e33]: Awards
+    - link "Users" [ref=e34] [cursor=pointer]:
+      - /url: /users
+      - img [ref=e35]
+      - generic [ref=e37]: Users
+    - link "Criteria" [ref=e38] [cursor=pointer]:
+      - /url: /criteria
+      - img [ref=e39]
+      - generic [ref=e41]: Criteria
+  - main [ref=e42]:
+    - generic [ref=e43]:
+      - heading "Lifecycle Panel 1771506052262" [level=1] [ref=e45]
+      - generic [ref=e47]:
+        - button "Edit Panel" [ref=e48] [cursor=pointer]
+        - button "Delete Panel" [ref=e49] [cursor=pointer]
+        - button "Add Member" [ref=e50] [cursor=pointer]
+        - button "Add Task" [ref=e51] [cursor=pointer]
+    - generic [ref=e52]:
+      - heading "Panel Members" [level=6] [ref=e53]
+      - paragraph [ref=e54]: No members added.
+    - generic [ref=e55]:
+      - heading "Panel Tasks" [level=6] [ref=e56]
+      - paragraph [ref=e57]: No tasks added.
+```

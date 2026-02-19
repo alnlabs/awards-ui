@@ -13,6 +13,7 @@ import { fetchAssignmentsForNomination } from "../../store/slices/panelAssignmen
 
 import { STATUS_COLORS, USER_ROLES } from "../../utils/constants";
 import { formatDateTime } from "../../utils/dateUtils";
+import { BASE_URL } from "../../config/api";
 
 import PageHeader from "../../components/common/PageHeader";
 import AppButton from "../../components/common/AppButton";
@@ -79,7 +80,7 @@ const ViewNomination = () => {
      Permissions
   ===================== */
   const canAssignPanels =
-    user?.role === USER_ROLES.HR && ["SUBMITTED", "HR_REVIEW"].includes(status);
+    (user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && ["SUBMITTED", "HR_REVIEW"].includes(status);
 
   /* =====================
      Render
@@ -172,6 +173,18 @@ const ViewNomination = () => {
                     ? JSON.stringify(a.value)
                     : String(a.value)}
                 </div>
+                {a.attachment && (
+                  <div className="mt-1">
+                    <a 
+                      href={`${BASE_URL}${a.attachment}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="text-decoration-none small d-inline-flex align-items-center"
+                    >
+                      <BiFile className="me-1" /> View Supporting Attachment
+                    </a>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -220,7 +233,7 @@ const ViewNomination = () => {
       )}
 
       {/* ================= PANEL REVIEWS ================= */}
-      {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.PANEL) && (
+      {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN || user?.role === USER_ROLES.PANEL) && (
         <Card>
           <CardHeader>
             <CardTitle>Panel Reviews</CardTitle>

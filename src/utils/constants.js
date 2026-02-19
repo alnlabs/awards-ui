@@ -1,8 +1,9 @@
 export const USER_ROLES = {
-  HR: 'HR',
-  MANAGER: 'MANAGER',
-  EMPLOYEE: 'EMPLOYEE',
-  PANEL: 'PANEL',
+  SUPER_ADMIN: "SUPER_ADMIN",
+  HR: "HR",
+  MANAGER: "MANAGER",
+  EMPLOYEE: "EMPLOYEE",
+  PANEL: "PANEL",
 };
 
 export const CYCLE_STATUS = {
