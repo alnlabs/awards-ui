@@ -1,43 +1,85 @@
 [
   {
-    "name": "Employee One",
-    "email": "user1@example.com",
-    "employee_code": "EMP1001",
+    "name": "John HR",
+    "email": "hr@example.com",
+    "employee_code": "HR001",
+    "role": "HR",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What was the nickname your friends gave you in school?",
+        "answer": "Johnny"
+      },
+      {
+        "question": "Which place do you want to visit again the most?",
+        "answer": "Paris"
+      },
+      {
+        "question": "What was your first job role?",
+        "answer": "Intern"
+      }
+    ]
+  },
+  {
+    "name": "Jane Manager",
+    "email": "manager@example.com",
+    "employee_code": "MGR001",
+    "role": "MANAGER",
+    "password": "Password@123",
+    "security_questions": [
+      {
+        "question": "What food can you eat every day without getting bored?",
+        "answer": "Pizza"
+      },
+      {
+        "question": "Which teacher had the biggest impact on you?",
+        "answer": "Mr. Smith"
+      },
+      {
+        "question": "What was your childhood dream job?",
+        "answer": "Astronaut"
+      }
+    ]
+  },
+  {
+    "name": "Alice Employee",
+    "email": "employee@example.com",
+    "employee_code": "EMP001",
     "role": "EMPLOYEE",
     "password": "Password@123",
     "security_questions": [
       {
         "question": "What was the nickname your friends gave you in school?",
-        "answer": "Nick1"
+        "answer": "Ally"
       },
       {
         "question": "Which place do you want to visit again the most?",
-        "answer": "Place1"
+        "answer": "Tokyo"
       },
       {
         "question": "What was your first job role?",
-        "answer": "Role1"
+        "answer": "Cashier"
       }
     ]
   },
   {
-    "name": "Employee Two",
-    "email": "user2@example.com",
-    "employee_code": "EMP1002",
-    "role": "EMPLOYEE",
+    "name": "Bob Panel",
+    "email": "panel@example.com",
+    "employee_code": "PNL001",
+    "role": "PANEL",
     "password": "Password@123",
     "security_questions": [
       {
         "question": "What food can you eat every day without getting bored?",
-        "answer": "Food1"
+        "answer": "Sushi"
       },
       {
         "question": "Which teacher had the biggest impact on you?",
-        "answer": "Teacher1"
+        "answer": "Ms. Johnson"
       },
       {
         "question": "What was your childhood dream job?",
-        "answer": "DreamJob1"
+        "answer": "Doctor"
       }
     ]
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -9,9 +9,8 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { BiPlus, BiUser, BiEdit, BiTrash } from "react-icons/bi";
-
-import { fetchUsers, bulkDeleteUsers } from "../../store/slices/usersSlice";
+import { BiPlus, BiUser, BiEdit, BiTrash, BiXCircle, BiCheckCircle } from "react-icons/bi";
+import { fetchUsers, bulkDeleteUsers, updateUser } from "../../store/slices/usersSlice";
 import { USER_ROLES } from "../../utils/constants";
 import Loading from "../../components/common/Loading";
 import PageHeader from "../../components/common/PageHeader";
@@ -47,6 +46,7 @@ const Users = () => {
   const navigate = useNavigate();
 
   const { users = [], totalCount = 0, loading } = useSelector((state) => state.users);
+  const { user: authUser } = useSelector((state) => state.auth);
 
   /* =====================
      Pagination
@@ -55,23 +55,35 @@ const Users = () => {
   const pageSize = 10;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // ✅ NEW: track bulk delete confirmation
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteIds, setBulkDeleteIds] = useState([]);
 
-  // ✅ NEW: track first load
+  // ✅ NEW: Status toggle
+  const handleToggleStatus = useCallback(async (user) => {
+    const newStatus = !user.is_active;
+    if (!window.confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this user?`)) return;
+    
+    await dispatch(updateUser({ 
+      id: user.id, 
+      data: { is_active: newStatus } 
+    }));
+  }, [dispatch]);
+
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [statusFilter, setStatusFilter] = useState(""); // "" (All), "true", "false"
 
   useEffect(() => {
-    dispatch(
-      fetchUsers({
-        skip: (page - 1) * pageSize,
-        limit: pageSize,
-      })
-    ).finally(() => {
+    const filters = {
+      skip: (page - 1) * pageSize,
+      limit: pageSize,
+    };
+    if (statusFilter !== "") {
+      filters.is_active = statusFilter;
+    }
+    dispatch(fetchUsers(filters)).finally(() => {
       setHasLoadedOnce(true);
     });
-  }, [dispatch, page]);
+  }, [dispatch, page, statusFilter]);
 
   /* =====================
      Role badge
@@ -104,6 +116,7 @@ const Users = () => {
           <Form.Check
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
+            disabled={row.original.id === authUser?.id}
           />
         ),
       },
@@ -134,16 +147,26 @@ const Users = () => {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => (
-          <AppButton
-            variant="outline-primary"
-            size="sm"
-            icon={BiEdit}
-            onClick={() => navigate(`/users/${row.original.id}/edit`)}
-          />
+          <div className="d-flex gap-2">
+            <AppButton
+              variant="outline-primary"
+              size="sm"
+              icon={BiEdit}
+              onClick={() => navigate(`/users/${row.original.id}/edit`)}
+            />
+            <AppButton
+              variant={row.original.is_active ? "outline-warning" : "outline-success"}
+              size="sm"
+              icon={row.original.is_active ? BiXCircle : BiCheckCircle}
+              onClick={() => handleToggleStatus(row.original)}
+              title={row.original.is_active ? "Deactivate" : "Activate"}
+              disabled={row.original.id === authUser?.id}
+            />
+          </div>
         ),
       },
     ],
-    [navigate]
+    [navigate, handleToggleStatus, authUser?.id]
   );
 
   /* =====================
@@ -228,8 +251,22 @@ const Users = () => {
       )}
 
       <StyledCard>
-        <CardHeader>
+        <CardHeader className="d-flex justify-content-between align-items-center">
           <CardTitle>Users ({totalCount})</CardTitle>
+          <div style={{ width: '200px' }}>
+            <Form.Select 
+              size="sm" 
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All Statuses</option>
+              <option value="true">Active Only</option>
+              <option value="false">Inactive Only</option>
+            </Form.Select>
+          </div>
         </CardHeader>
 
         <CardBody>

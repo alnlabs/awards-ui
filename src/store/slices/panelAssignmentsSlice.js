@@ -111,6 +111,7 @@ const panelAssignmentsSlice = createSlice({
       /* ================= HR → Assignments for Nomination ================= */
       .addCase(fetchAssignmentsForNomination.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchAssignmentsForNomination.fulfilled, (state, action) => {
         state.loading = false;
@@ -125,6 +126,7 @@ const panelAssignmentsSlice = createSlice({
       /* ================= PANEL → My Assignments ================= */
       .addCase(fetchMyPanelAssignments.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchMyPanelAssignments.fulfilled, (state, action) => {
         state.loading = false;
@@ -138,6 +140,7 @@ const panelAssignmentsSlice = createSlice({
       /* ================= PANEL → Submit Review ================= */
       .addCase(submitTaskReview.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(submitTaskReview.fulfilled, (state) => {
         state.loading = false;

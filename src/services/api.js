@@ -32,18 +32,18 @@ apiFileUpload.interceptors.request.use(
 apiFileUpload.interceptors.response.use(
   (response) => {
     const payload = response.data;
-    
+
     if (payload?.status === "failure") {
       toast.error(payload.error || payload.message || "Request failed");
       return Promise.reject(payload);
     }
-    
+
     return payload?.data;
   },
   (error) => {
     if (error.response) {
       const { status, data } = error.response;
-      
+
       if (status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -54,10 +54,10 @@ apiFileUpload.interceptors.response.use(
       } else {
         toast.error(data?.error || data?.message || "Something went wrong");
       }
-      
+
       return Promise.reject(data);
     }
-    
+
     toast.error("Network error. Please check your connection.");
     return Promise.reject(error);
   }
@@ -109,6 +109,10 @@ api.interceptors.response.use(
       const { status, data } = error.response;
 
       if (status === 401) {
+        // Skip redirect if this is a login request to allow showing error message
+        if (error.config.url.includes("/auth/login")) {
+          return Promise.reject(data);
+        }
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         toast.error("Session expired. Please login again.");

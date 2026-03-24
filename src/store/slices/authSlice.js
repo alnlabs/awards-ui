@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authService } from "../../services/authService";
+import toast from "react-hot-toast";
 
 /* =====================
    Initial State
@@ -129,9 +130,45 @@ const authSlice = createSlice({
       .addCase(getMe.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      
+      /* ---------- SWITCH ROLE ---------- */
+      .addCase(switchRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(switchRole.fulfilled, (state, action) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
+      })
+      .addCase(switchRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
+
+export const switchRole = createAsyncThunk(
+  "auth/switchRole",
+  async (role, { rejectWithValue }) => {
+    try {
+      const toastId = toast.loading(`Switching to ${role} view...`);
+      const response = await authService.switchRole(role);
+      
+      const user = await authService.getMe();
+      
+      toast.success(`Switched to ${role} view`, { id: toastId });
+      return {
+        token: response.access_token,
+        user
+      };
+    } catch (error) {
+      toast.error(error?.error || "Role switch failed");
+      return rejectWithValue(error?.error || "Role switch failed");
+    }
+  }
+);
 
 export const { logout, clearError } = authSlice.actions;
 export default authSlice.reducer;

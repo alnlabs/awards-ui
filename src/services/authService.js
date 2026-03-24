@@ -70,6 +70,19 @@ export const authService = {
   },
 
   /* =====================
+     Switch Role
+  ===================== */
+  switchRole: async (role) => {
+    const data = await api.post("/auth/switch-role", { role });
+    
+    if (data?.access_token) {
+      localStorage.setItem("token", data.access_token);
+    }
+    
+    return data;
+  },
+
+  /* =====================
      Local helpers
   ===================== */
   getToken: () => localStorage.getItem("token"),

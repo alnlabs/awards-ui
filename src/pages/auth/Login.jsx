@@ -6,6 +6,7 @@ import { login } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import styled from 'styled-components';
 import { BiTrophy, BiEnvelope, BiLock } from 'react-icons/bi';
+import { BsEye, BsEyeSlash } from 'react-icons/bs';
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -115,7 +116,7 @@ const StyledFormGroup = styled(Form.Group)`
     }
 
     .form-control {
-      padding: 0.75rem 1rem 0.75rem 3rem;
+      padding: 0.75rem 3.5rem 0.75rem 3rem;
       border-radius: 12px;
       border: 1.5px solid #e2e8f0;
       background: white;
@@ -134,6 +135,25 @@ const StyledFormGroup = styled(Form.Group)`
 
       &::placeholder {
         color: #94a3b8;
+      }
+    }
+
+    .visibility-toggle {
+      position: absolute;
+      right: 1rem;
+      left: auto;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      transition: color 0.2s;
+      z-index: 5;
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        color: #6366f1;
       }
     }
   }
@@ -190,10 +210,14 @@ const LoginLink = styled.div`
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.auth);
+  
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [selectedRole, setSelectedRole] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -201,11 +225,33 @@ const Login = () => {
     }
   }, [user, navigate]);
 
+  const handleEmailBlur = async () => {
+    if (!email) return;
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+      const response = await fetch(`${apiBaseUrl}/auth/user-roles/${email}`);
+      const payload = await response.json();
+      if (payload.status === "success") {
+        const roles = payload.data.roles;
+        setAvailableRoles(roles);
+        if (roles.length > 0 && !selectedRole) {
+          setSelectedRole(roles[0]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch roles", err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const result = await dispatch(login({ email, password })).unwrap();
+      const result = await dispatch(login({ 
+        email, 
+        password, 
+        role: selectedRole 
+      })).unwrap();
       if (result) {
         toast.success('Login successful!');
         navigate('/dashboard');
@@ -249,23 +295,51 @@ const Login = () => {
                   placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={handleEmailBlur}
                   required
                 />
                 <BiEnvelope />
               </div>
             </StyledFormGroup>
 
+            {availableRoles.length > 1 && (
+              <StyledFormGroup>
+                <Form.Label>Select Role</Form.Label>
+                <div className="input-wrapper">
+                  <Form.Select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="form-control"
+                    style={{ paddingLeft: '1rem' }}
+                  >
+                    {availableRoles.map(role => (
+                      <option key={role} value={role}>
+                        {role === "PANEL" ? "Panel Member" : role}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </div>
+              </StyledFormGroup>
+            )}
+
             <StyledFormGroup>
               <Form.Label>Password</Form.Label>
               <div className="input-wrapper">
                 <Form.Control
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
                 <BiLock />
+                <div 
+                  className="visibility-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? "Hide Password" : "Show Password"}
+                >
+                  {showPassword ? <BsEyeSlash /> : <BsEye />}
+                </div>
               </div>
             </StyledFormGroup>
 

@@ -1,0 +1,64 @@
+
+> employee-awards-ui@0.0.0 lint
+> eslint .
+
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/playwright.config.js
+  12:19  error  'process' is not defined  no-undef
+  14:14  error  'process' is not defined  no-undef
+  16:14  error  'process' is not defined  no-undef
+  42:31  error  'process' is not defined  no-undef
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/src/pages/Dashboard.jsx
+  338:7  error    Error: Cannot access variable before it is declared
+
+`fetchSystemStatus` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  336 |
+  337 |     if (user?.role === USER_ROLES.SUPER_ADMIN) {
+> 338 |       fetchSystemStatus();
+      |       ^^^^^^^^^^^^^^^^^ `fetchSystemStatus` accessed before it is declared
+  339 |     }
+  340 |   }, [dispatch, user?.role, user?.is_panel_member]);
+  341 |
+
+  340 |   }, [dispatch, user?.role, user?.is_panel_member]);
+  341 |
+> 342 |   const fetchSystemStatus = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 343 |     try {
+      | ^^^^^^^^^
+> 344 |       const data = await api.get("/system/status");
+      …
+      | ^^^^^^^^^
+> 353 |     }
+      | ^^^^^^^^^
+> 354 |   };
+      | ^^^^^ `fetchSystemStatus` is declared here
+  355 |
+  356 |   const loading = cyclesLoading || nominationsLoading;
+  357 |   if (loading) return <Loading />;  react-hooks/immutability
+  340:6  warning  React Hook useEffect has a missing dependency: 'fetchSystemStatus'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/src/pages/admin/SetupWizardPage.jsx
+  216:14  error  'error' is defined but never used  no-unused-vars
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/src/pages/admin/SystemSettings.jsx
+  84:14  error  'error' is defined but never used  no-unused-vars
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/src/pages/users/Users.jsx
+   62:9   warning  The 'handleToggleStatus' function makes the dependencies of useMemo Hook (at line 169) change on every render. Move it inside the useMemo callback. Alternatively, wrap the definition of 'handleToggleStatus' in its own useCallback() Hook                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+  175:17  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  173 |      React Table
+  174 |   ===================== */
+> 175 |   const table = useReactTable({
+      |                 ^^^^^^^^^^^^^ TanStack Table's `useReactTable()` API returns functions that cannot be memoized safely
+  176 |     data: users,
+  177 |     columns,
+  178 |     getCoreRowModel: getCoreRowModel(),  react-hooks/incompatible-library
+
+✖ 10 problems (7 errors, 3 warnings)
+
