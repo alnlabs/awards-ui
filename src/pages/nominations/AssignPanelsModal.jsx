@@ -4,7 +4,10 @@ import { Modal, Form, Spinner, Table } from "react-bootstrap";
 
 import AppButton from "../../components/common/AppButton";
 import { fetchPanels } from "../../store/slices/panelSlice";
-import { assignPanelsToNomination } from "../../store/slices/panelAssignmentsSlice";
+import { 
+  assignPanelsToNomination, 
+  fetchAssignmentsForNomination 
+} from "../../store/slices/panelAssignmentsSlice";
 import { fetchNominationById } from "../../store/slices/nominationsSlice";
 
 /**
@@ -22,8 +25,8 @@ const AssignPanelsModal = ({ nominationId, onClose }) => {
   );
   const { loading } = useSelector((state) => state.panelAssignments);
 
-  // selectedPanels now stores objects: { panel_id, role }
-  const [panelAssignments, setPanelAssignments] = useState([]);
+  // selectedPanelIds stores a simple list of UUIDs
+  const [selectedPanelIds, setSelectedPanelIds] = useState([]);
 
   /* =====================
      Load panels
@@ -35,41 +38,30 @@ const AssignPanelsModal = ({ nominationId, onClose }) => {
   /* =====================
      Handlers
   ===================== */
-  const handleRoleChange = (panelId, role) => {
-    setPanelAssignments((prev) => {
-      const existing = prev.find((pa) => pa.panel_id === panelId);
-      
-      if (role === "") {
-        // Remove if "None" selected
-        return prev.filter((pa) => pa.panel_id !== panelId);
-      }
-
-      if (existing) {
-        return prev.map((pa) => 
-          pa.panel_id === panelId ? { ...pa, role } : pa
-        );
-      } else {
-        return [...prev, { panel_id: panelId, role }];
-      }
-    });
+  const togglePanelSelection = (panelId) => {
+    setSelectedPanelIds((prev) =>
+      prev.includes(panelId)
+        ? prev.filter((id) => id !== panelId)
+        : [...prev, panelId]
+    );
   };
 
   const handleAssign = async () => {
-    if (panelAssignments.length === 0) {
-      alert("Please assign at least one panel");
+    if (selectedPanelIds.length === 0) {
+      alert("Please select at least one panel");
       return;
     }
 
-    // Ensure we send objects with panel_id and role
     const res = await dispatch(
       assignPanelsToNomination({
         nominationId,
-        assignments: panelAssignments, // Expects [{panel_id: UUID, role: "CHAIR"|"REVIEWER"}]
+        panelIds: selectedPanelIds,
       })
     );
 
     if (!res.error) {
       dispatch(fetchNominationById(nominationId));
+      dispatch(fetchAssignmentsForNomination(nominationId));
       onClose();
     }
   };
@@ -97,32 +89,28 @@ const AssignPanelsModal = ({ nominationId, onClose }) => {
             <Table hover align="middle">
               <thead>
                 <tr>
+                  <th style={{ width: '40px' }}>Select</th>
                   <th>Panel Name</th>
                   <th>Description</th>
-                  <th style={{ width: '150px' }}>Assignment</th>
                 </tr>
               </thead>
               <tbody>
                 {panels.map((panel) => {
-                  const assignment = panelAssignments.find(pa => pa.panel_id === panel.id);
+                  const isSelected = selectedPanelIds.includes(panel.id);
                   return (
                     <tr key={panel.id}>
+                      <td>
+                        <Form.Check
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => togglePanelSelection(panel.id)}
+                        />
+                      </td>
                       <td>
                         <strong>{panel.name}</strong>
                       </td>
                       <td className="small text-muted">
                         {panel.description || "-"}
-                      </td>
-                      <td>
-                        <Form.Select
-                          size="sm"
-                          value={assignment?.role || ""}
-                          onChange={(e) => handleRoleChange(panel.id, e.target.value)}
-                        >
-                          <option value="">None</option>
-                          <option value="REVIEWER">Reviewer</option>
-                          <option value="CHAIR">Chair</option>
-                        </Form.Select>
                       </td>
                     </tr>
                   );
@@ -139,7 +127,7 @@ const AssignPanelsModal = ({ nominationId, onClose }) => {
         </AppButton>
         <AppButton
           onClick={handleAssign}
-          disabled={loading || panelAssignments.length === 0}
+          disabled={loading || selectedPanelIds.length === 0}
         >
           {loading ? "Assigning..." : "Assign Panels"}
         </AppButton>

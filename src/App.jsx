@@ -26,6 +26,8 @@ import "./App.css";
 import { Cycles, UpsertCycle, ViewCycle } from "./pages/cycles";
 import { Awards, UpsertAward, ViewAward, AwardCertificate } from "./pages/awards";
 import { UpsertUser, Users } from "./pages/users";
+import SystemSettings from "./pages/admin/SystemSettings";
+import SetupWizardPage from "./pages/admin/SetupWizardPage";
 
 /* =====================
    Criteria (HR)
@@ -388,6 +390,26 @@ function App() {
                 <DashboardLayout>
                   <UpsertUser />
                 </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN]}>
+                <DashboardLayout>
+                  <SystemSettings />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/setup"
+            element={
+              <ProtectedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN]}>
+                <SetupWizardPage />
               </ProtectedRoute>
             }
           />

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { Modal, Table, Alert } from "react-bootstrap";
+import { Modal, Table, Alert, Form } from "react-bootstrap";
 import { BiUser, BiUpload, BiDownload, BiCheckCircle, BiErrorCircle } from "react-icons/bi";
 import toast from "react-hot-toast";
 
@@ -58,6 +58,7 @@ const DEFAULT_VALUES = {
     { question: "", answer: "" },
     { question: "", answer: "" },
   ],
+  is_active: true,
 };
 
 const UpsertUser = () => {
@@ -124,6 +125,7 @@ const UpsertUser = () => {
       password: "",
       confirmPassword: "",
       security_questions: DEFAULT_VALUES.security_questions,
+      is_active: currentUser.is_active,
     });
   }, [isEdit, currentUser, reset]);
 
@@ -203,6 +205,7 @@ const UpsertUser = () => {
             role: data.role,
             password: data.password,
             security_questions: data.security_questions,
+            is_active: data.is_active,
           })
         ).unwrap();
 
@@ -215,6 +218,7 @@ const UpsertUser = () => {
               name: data.name,
               employee_code: data.employee_code,
               role: data.role,
+              is_active: data.is_active,
             },
           })
         ).unwrap();
@@ -350,6 +354,7 @@ const UpsertUser = () => {
               name="role"
               control={control}
               error={errors.role}
+              disabled={isEdit && currentUser?.id === authUser?.id}
               options={[
                 { label: "Employee", value: USER_ROLES.EMPLOYEE },
                 { label: "Manager", value: USER_ROLES.MANAGER },
@@ -363,6 +368,20 @@ const UpsertUser = () => {
                   : []),
               ]}
             />
+
+            {(!isEdit || currentUser?.id !== authUser?.id) && (
+              <Form.Group className="mb-4">
+                <Form.Check 
+                  type="switch"
+                  id="is-active-switch"
+                  label={watch("is_active") ? "Account is Active" : "Account is Inactive"}
+                  {...register("is_active")}
+                />
+                <Form.Text className="text-muted">
+                  Inactive users cannot log in to the system.
+                </Form.Text>
+              </Form.Group>
+            )}
 
             {!isEdit && (
               <>

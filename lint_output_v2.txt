@@ -1,0 +1,46 @@
+
+> employee-awards-ui@0.0.0 lint
+> eslint .
+
+(node:19333) ESLintEnvWarning: /* eslint-env */ comments are no longer recognized when linting with flat config and will be reported as errors as of v10.0.0. Replace them with /* global */ comments or define globals in your config file. See https://eslint.org/docs/latest/use/configure/migration-guide#eslint-env-configuration-comments for details. Found in /Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/playwright.config.js at line 1.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/playwright.config.js
+  13:19  error  'process' is not defined  no-undef
+  15:14  error  'process' is not defined  no-undef
+  17:14  error  'process' is not defined  no-undef
+  43:31  error  'process' is not defined  no-undef
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/src/pages/Dashboard.jsx
+  325:9  warning  The 'fetchSystemStatus' function makes the dependencies of useEffect Hook (at line 354) change on every render. Move it inside the useEffect callback. Alternatively, wrap the definition of 'fetchSystemStatus' in its own useCallback() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+  352:7  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  350 |
+  351 |     if (user?.role === USER_ROLES.SUPER_ADMIN) {
+> 352 |       fetchSystemStatus();
+      |       ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  353 |     }
+  354 |   }, [dispatch, user?.role, user?.is_panel_member, fetchSystemStatus]);
+  355 |  react-hooks/set-state-in-effect
+
+/Users/nageshwarreddy/Documents/personal/projects/awards-project/awards-v1/awards-ui/src/pages/users/Users.jsx
+  175:17  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  173 |      React Table
+  174 |   ===================== */
+> 175 |   const table = useReactTable({
+      |                 ^^^^^^^^^^^^^ TanStack Table's `useReactTable()` API returns functions that cannot be memoized safely
+  176 |     data: users,
+  177 |     columns,
+  178 |     getCoreRowModel: getCoreRowModel(),  react-hooks/incompatible-library
+
+✖ 7 problems (5 errors, 2 warnings)
+

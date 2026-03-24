@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "react-bootstrap";
-import { BiArrowBack, BiUser, BiCheckCircle, BiGroup } from "react-icons/bi";
+import { BiArrowBack, BiUser, BiCheckCircle, BiGroup, BiFile } from "react-icons/bi";
 
 import {
   fetchNominationById,
@@ -67,8 +67,9 @@ const ViewNomination = () => {
   if (loading || !currentNomination) return <Loading />;
 
   const {
-    nominee_id,
-    cycle_id,
+    nominee,
+    nominated_by,
+    cycle,
     status,
     submitted_at,
     created_at,
@@ -123,13 +124,26 @@ const ViewNomination = () => {
 
         <CardBody className="row g-3">
           <div className="col-md-6">
-            <strong>Nominee ID</strong>
-            <div className="text-muted">{nominee_id}</div>
+            <strong>Nominee</strong>
+            <div className="text-muted">
+              {nominee?.name} <br />
+              <small>{nominee?.email}</small>
+            </div>
           </div>
 
           <div className="col-md-6">
-            <strong>Cycle ID</strong>
-            <div className="text-muted">{cycle_id}</div>
+            <strong>Cycle</strong>
+            <div className="text-muted">
+              {cycle ? `${cycle.name} (${cycle.quarter} ${cycle.year})` : "-"}
+            </div>
+          </div>
+
+          <div className="col-md-6">
+            <strong>Nominated By</strong>
+            <div className="text-muted">
+              {nominated_by?.name || "System"} <br />
+              <small>{nominated_by?.email}</small>
+            </div>
           </div>
 
           <div className="col-md-6">
@@ -202,7 +216,7 @@ const ViewNomination = () => {
           <CardBody>
             {assignedPanels.map((a) => (
               <div key={a.assignment_id} className="mb-3 border rounded p-3">
-                <div className="fw-semibold">{a.panel.name}</div>
+                <div className="fw-semibold">{a.panel?.name || "Unknown Panel"}</div>
 
                 <small className="text-muted d-block mb-2">
                   Status: {a.status} · Assigned at{" "}
@@ -212,7 +226,7 @@ const ViewNomination = () => {
                 {/* PANEL MEMBERS */}
                 <div>
                   <strong>Members</strong>
-                  {a.panel.members.length === 0 ? (
+                  {(!a.panel?.members || a.panel.members.length === 0) ? (
                     <div className="text-muted small">No members</div>
                   ) : (
                     <ul className="list-group list-group-flush mt-1">
@@ -247,17 +261,20 @@ const ViewNomination = () => {
                 <div key={r.id} className="border rounded p-3 mb-2">
                   <div className="d-flex align-items-center mb-1">
                     <BiUser className="me-2" />
-                    <strong>Panel Member</strong>
+                    <strong>{r.reviewer?.name || "Panel Member"}</strong>
+                    {r.reviewer?.email && (
+                      <span className="text-muted small ms-2">({r.reviewer.email})</span>
+                    )}
                   </div>
 
                   <div className="mb-1">
                     <strong>Score:</strong> {r.score}
                   </div>
 
-                  {r.comments && (
+                  {r.comment && (
                     <div className="mb-1">
                       <strong>Comments:</strong>
-                      <div className="text-muted">{r.comments}</div>
+                      <div className="text-muted">{r.comment}</div>
                     </div>
                   )}
 

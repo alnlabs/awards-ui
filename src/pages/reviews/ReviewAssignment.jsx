@@ -74,7 +74,7 @@ export default function ReviewAssignment() {
     <>
       <PageHeader
         title={assignment.panel.name}
-        subtitle={`Review Nomination: ${assignment.nomination.nominee_id}`}
+        subtitle={`Review Nomination for: ${assignment.nomination?.nominee?.name || assignment.nomination?.nominee_id}`}
         actions={
           <AppButton variant="secondary" onClick={() => navigate("/reviews")}>
             Back

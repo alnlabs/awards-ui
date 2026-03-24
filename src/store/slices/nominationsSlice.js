@@ -154,8 +154,17 @@ const nominationsSlice = createSlice({
       })
 
       /* ---------- FETCH BY ID ---------- */
+      .addCase(fetchNominationById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchNominationById.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentNomination = action.payload;
+      })
+      .addCase(fetchNominationById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
 
       /* ---------- CREATE ---------- */

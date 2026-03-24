@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import styled from "styled-components";
 import {
   BiTrophy,
   BiUser,
+  BiUserPlus,
   BiListUl,
   BiBook,
   BiCheckCircle,
@@ -16,6 +17,7 @@ import {
   BiPlus,
   BiChevronRight,
   BiX,
+  BiCog,
 } from "react-icons/bi";
 
 import { fetchCycles } from "../store/slices/cyclesSlice";
@@ -27,6 +29,7 @@ import { USER_ROLES, STATUS_COLORS } from "../utils/constants";
 import { formatDate } from "../utils/dateUtils";
 import Loading from "../components/common/Loading";
 import AppButton from "../components/common/AppButton";
+import api from "../services/api";
 
 /* =====================
    Styled Components
@@ -296,6 +299,7 @@ const Dashboard = () => {
   const [showWelcome, setShowWelcome] = useState(() => {
     return localStorage.getItem("hideDashboardWelcome") !== "true";
   });
+  const [systemStatus, setSystemStatus] = useState(null);
 
   const handleCloseWelcome = () => {
     setShowWelcome(false);
@@ -318,6 +322,20 @@ const Dashboard = () => {
      Fetch Core Data
   ===================== */
 
+  const fetchSystemStatus = useCallback(async () => {
+    try {
+      const data = await api.get("/system/status");
+      setSystemStatus(data);
+      
+      // Automatically trigger setup wizard if not complete
+      if (data && data.setup_complete === false) {
+        navigate("/setup");
+      }
+    } catch (error) {
+      console.error("Failed to fetch system status", error);
+    }
+  }, [navigate]);
+
   useEffect(() => {
     dispatch(fetchCycles());
     dispatch(fetchNominations({}));
@@ -329,7 +347,15 @@ const Dashboard = () => {
     if (user?.role === USER_ROLES.PANEL || user?.is_panel_member) {
       dispatch(fetchMyPanelAssignments());
     }
-  }, [dispatch, user?.role, user?.is_panel_member]);
+
+    if (user?.role === USER_ROLES.SUPER_ADMIN) {
+      // Use a timeout or a separate effect to avoid synchronous setState in effect
+      const timeout = setTimeout(() => {
+        fetchSystemStatus();
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+  }, [dispatch, user?.role, user?.is_panel_member, fetchSystemStatus]);
 
   const loading = cyclesLoading || nominationsLoading;
   if (loading) return <Loading />;
@@ -661,7 +687,7 @@ const Dashboard = () => {
                 </>
               )}
 
-              {(user?.role === USER_ROLES.PANEL || user?.is_panel_member) && user?.role !== USER_ROLES.HR && (
+              {(user?.role === USER_ROLES.PANEL || user?.is_panel_member) && (
                 <>
                   <SectionTitle>My Pending Assignments</SectionTitle>
                   {panelAssignments.filter(a => !a.progress?.is_complete).length === 0 ? (
@@ -728,9 +754,40 @@ const Dashboard = () => {
             SIDEBAR (Quick Actions)
         ===================== */}
         <SidebarSection xs={12} lg={4} xl={3}>
+          {user?.role === USER_ROLES.SUPER_ADMIN && (
+            <QuickActionsCard className="mb-4">
+              <Card.Body className="p-4">
+                <SectionTitle>System Status</SectionTitle>
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-muted">Database</span>
+                  <Badge bg={systemStatus?.database?.status === 'connected' ? "success" : "danger"}>
+                    {systemStatus?.database?.status === 'connected' ? 'Online' : 'Offline'}
+                  </Badge>
+                </div>
+                <div className="d-flex justify-content-between mb-2">
+                   <span className="text-muted">Total Users</span>
+                   <span className="fw-bold">{systemStatus?.users?.total || '...'}</span>
+                </div>
+                <div className="d-flex justify-content-between">
+                   <span className="text-muted">Active Cycles</span>
+                   <span className="fw-bold text-primary">{openCycles}</span>
+                </div>
+              </Card.Body>
+            </QuickActionsCard>
+          )}
+
           <QuickActionsCard className="h-100">
             <Card.Body className="p-4">
               <SectionTitle>Quick Actions</SectionTitle>
+
+              {user?.role === USER_ROLES.SUPER_ADMIN && (
+                <div className="mb-4">
+                  <h6 className="text-uppercase text-muted fw-bold small mb-2">Platform Control</h6>
+                  <QuickActionButton variant="outline-dark" onClick={() => navigate("/admin/settings")}>
+                    <BiCog className="me-2" /> System Settings
+                  </QuickActionButton>
+                </div>
+              )}
               
               {(user?.role === USER_ROLES.HR || user?.role === USER_ROLES.SUPER_ADMIN) && (
                 <>
@@ -745,6 +802,12 @@ const Dashboard = () => {
                   </QuickActionButton>
                   <QuickActionButton variant="outline-primary" onClick={() => navigate("/panels")}>
                     <BiGroup className="me-2" /> Manage Panels
+                  </QuickActionButton>
+                  <QuickActionButton variant="outline-primary" onClick={() => navigate("/users/new")}>
+                    <BiUserPlus className="me-2" /> Add Employee
+                  </QuickActionButton>
+                  <QuickActionButton variant="outline-primary" onClick={() => navigate("/users")}>
+                    <BiUser className="me-2" /> User Management
                   </QuickActionButton>
                 </>
               )}

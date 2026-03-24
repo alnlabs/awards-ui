@@ -15,7 +15,7 @@ import {
   BiTask,
 } from "react-icons/bi";
 
-import { logout } from "../../store/slices/authSlice";
+import { logout, switchRole } from "../../store/slices/authSlice";
 import { USER_ROLES } from "../../utils/constants";
 
 /* =====================
@@ -208,7 +208,13 @@ const DashboardLayout = ({ children }) => {
       path: "/awards",
       label: "Awards",
       icon: BiTrophy,
-      roles: [USER_ROLES.HR, USER_ROLES.SUPER_ADMIN, USER_ROLES.EMPLOYEE],
+      roles: [
+        USER_ROLES.HR,
+        USER_ROLES.SUPER_ADMIN,
+        USER_ROLES.MANAGER,
+        USER_ROLES.EMPLOYEE,
+        USER_ROLES.PANEL,
+      ],
     },
     {
       path: "/users",
@@ -255,6 +261,31 @@ const DashboardLayout = ({ children }) => {
                 <BiUser className="me-2 text-primary" />
                 Profile
               </NavDropdown.Item>
+
+              {/* ROLE SWITCHER */}
+              {user?.is_panel_member && (
+                <>
+                  <NavDropdown.Divider />
+                  {user?.role === USER_ROLES.PANEL ? (
+                    <NavDropdown.Item 
+                      onClick={() => dispatch(switchRole(user.main_role))}
+                      className="py-2 fw-bold text-primary"
+                    >
+                      <BiHome className="me-2" />
+                      Switch to {user.main_role} View
+                    </NavDropdown.Item>
+                  ) : (
+                    <NavDropdown.Item 
+                      onClick={() => dispatch(switchRole(USER_ROLES.PANEL))}
+                      className="py-2 fw-bold text-success"
+                    >
+                      <BiTrophy className="me-2" />
+                      Switch to Panel View
+                    </NavDropdown.Item>
+                  )}
+                </>
+              )}
+
               <NavDropdown.Divider />
               <NavDropdown.Item onClick={handleLogout} className="py-2 text-danger">
                 <BiLogOut className="me-2" />

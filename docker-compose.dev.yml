@@ -1,0 +1,17 @@
+services:
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: develop
+    container_name: awards_ui_dev
+    ports:
+      - "${UI_PORT:-4200}:4200"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - VITE_PORT=4200
+      - VITE_HOST=0.0.0.0

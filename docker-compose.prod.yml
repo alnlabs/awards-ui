@@ -1,0 +1,10 @@
+services:
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: awards_ui_prod
+    ports:
+      - "${UI_PORT_PROD:-8080}:80"
+    restart: always
